@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "builds": [
+    "best-fit"
+  ],
+  "boots": [
+    {
+      "pmm": "best-fit",
+      "ram_mib": 128,
+      "result": "PASS"
+    }
+  ],
+  "grade": "20/20",
+  "symbols": {
+    "boot_page_table_sv39": "0xffffffffc0205000",
+    "end": "0xffffffffc0206078"
+  }
+}

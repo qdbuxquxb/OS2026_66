@@ -34,10 +34,12 @@ CFLAGS  := -mcmodel=medany -std=gnu99 -Wno-unused -Werror
 CFLAGS	+= -fno-builtin -Wall -O2 -nostdinc $(DEFS)
 CFLAGS	+= -fno-stack-protector -ffunction-sections -fdata-sections
 CFLAGS	+= -g
-# The first version provides the default Best-Fit page manager.
+# Default required by the official grader; PMM=buddy runs the Buddy variant.
 PMM ?= best-fit
-ifneq ($(PMM),best-fit)
-$(error Only PMM=best-fit is available in this version)
+ifeq ($(PMM),buddy)
+CFLAGS += -DUSE_BUDDY_PMM
+else ifneq ($(PMM),best-fit)
+$(error PMM must be best-fit or buddy)
 endif
 CFLAGS2 = $(CFLAGS) -D ucore_test
 CTYPE	:= c S

@@ -1,0 +1,30 @@
+Breakpoint 1 at 0x39b464: file /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c, line 158.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff6287640 (LWP 104815)]
+[New Thread 0x7ffff5a05640 (LWP 104816)]
+[Switching to Thread 0x7ffff5a05640 (LWP 104816)]
+
+Thread 3 "qemu-system-ris" hit Breakpoint 1, get_physical_address (env=0x5555562be710, physical=0x7ffff5a04470, prot=0x7ffff5a04464, addr=2149580800, access_type=2, mmu_idx=1) at /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c:158
+158	{
+BARE: addr=0x80200000 satp=0 mmu_idx=1
+#0  get_physical_address (env=0x5555562be710, physical=0x7ffff5a04470, prot=0x7ffff5a04464, addr=2149580800, access_type=2, mmu_idx=1) at /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c:158
+#1  0x00005555558f0140 in riscv_cpu_tlb_fill (cs=0x5555562b5d00, address=2149580800, size=0, access_type=MMU_INST_FETCH, mmu_idx=1, probe=false, retaddr=0) at /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c:451
+#2  0x000055555583646f in tlb_fill (cpu=0x5555562b5d00, addr=2149580800, size=0, access_type=MMU_INST_FETCH, mmu_idx=1, retaddr=0) at /home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c:878
+#3  0x0000555555836b2b in get_page_addr_code (env=0x5555562be710, addr=2149580800) at /home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c:1032
+#4  0x000055555585b5f1 in tb_htable_lookup (cpu=0x5555562b5d00, pc=2149580800, cs_base=0, flags=24577, cf_mask=4278714368) at /home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cpu-exec.c:339
+#5  0x000055555585ab2a in tb_lookup__cpu_state (cpu=0x5555562b5d00, pc=0x7ffff5a04678, cs_base=0x7ffff5a04670, flags=0x7ffff5a0466c, cf_mask=4278714368) at /home/ctf/tools/qemu-build/qemu-4.1.1/include/exec/tb-lookup.h:43
+0x00005555558f0140 in riscv_cpu_tlb_fill (cs=0x5555562b5d00, address=2149580800, size=0, access_type=MMU_INST_FETCH, mmu_idx=1, probe=false, retaddr=0) at /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c:451
+451	    ret = get_physical_address(env, &pa, &prot, address, access_type, mmu_idx);
+Value returned is $1 = 0
+BARE_PA=0x80200000
+Temporary breakpoint 2 at 0x555555836364: file /home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c, line 847.
+
+Thread 3 "qemu-system-ris" hit Temporary breakpoint 2, tlb_set_page (cpu=0x5555562b5d00, vaddr=2149580800, paddr=2149580800, prot=7, mmu_idx=1, size=4096) at /home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c:847
+847	    tlb_set_page_with_attrs(cpu, vaddr, paddr, MEMTXATTRS_UNSPECIFIED,
+BARE_TLB_FILL: va=0x80200000 pa=0x80200000 mmu_idx=1
+#0  tlb_set_page (cpu=0x5555562b5d00, vaddr=2149580800, paddr=2149580800, prot=7, mmu_idx=1, size=4096) at /home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c:847
+#1  0x00005555558f0269 in riscv_cpu_tlb_fill (cs=0x5555562b5d00, address=2149580800, size=0, access_type=MMU_INST_FETCH, mmu_idx=1, probe=false, retaddr=0) at /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c:472
+#2  0x000055555583646f in tlb_fill (cpu=0x5555562b5d00, addr=2149580800, size=0, access_type=MMU_INST_FETCH, mmu_idx=1, retaddr=0) at /home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c:878
+#3  0x0000555555836b2b in get_page_addr_code (env=0x5555562be710, addr=2149580800) at /home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c:1032
+[Inferior 1 (process 104812) killed]

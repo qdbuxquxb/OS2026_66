@@ -30,14 +30,16 @@ DTB init completed
 (THU.CST) os is loading ...
 Special kernel symbols:
   entry  0xffffffffc02000d6 (virtual)
-  etext  0xffffffffc0201694 (virtual)
-  edata  0xffffffffc0206018 (virtual)
-  end    0xffffffffc0206078 (virtual)
-Kernel executable memory footprint: 24KB
+  etext  0xffffffffc02024e2 (virtual)
+  edata  0xffffffffc0207020 (virtual)
+  end    0xffffffffc0207188 (virtual)
+Kernel executable memory footprint: 29KB
 memory management: best_fit_pmm_manager
 physical memory map:
   memory: 0x0000000008000000, [0x0000000080000000, 0x0000000087ffffff].
 check_alloc_page() succeeded!
-satp virtual address: 0xffffffffc0205000
-satp physical address: 0x0000000080205000
+buddy_check() succeeded! (rounding, split, merge, exhaustion, unaligned range)
+satp virtual address: 0xffffffffc0206000
+satp physical address: 0x0000000080206000
+mmu_probe() succeeded!
 qemu-system-riscv64: terminating on signal 15 from pid 103856 (python3)

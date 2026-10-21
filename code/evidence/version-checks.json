@@ -1,18 +1,26 @@
 {
-  "version": 1,
+  "version": 2,
   "builds": [
-    "best-fit"
+    "best-fit",
+    "buddy"
   ],
   "boots": [
     {
       "pmm": "best-fit",
       "ram_mib": 128,
       "result": "PASS"
+    },
+    {
+      "pmm": "buddy",
+      "ram_mib": 128,
+      "result": "PASS"
     }
   ],
   "grade": "20/20",
   "symbols": {
-    "boot_page_table_sv39": "0xffffffffc0205000",
-    "end": "0xffffffffc0206078"
+    "boot_page_table_sv39": "0xffffffffc0206000",
+    "end": "0xffffffffc0207188",
+    "mmu_debug_word": "0xffffffffc0207010",
+    "mmu_load_first": "0xffffffffc0200158"
   }
 }

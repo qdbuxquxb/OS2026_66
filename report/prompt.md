@@ -66,3 +66,91 @@ best_fit_free_pages：Pre 为有效的已分配连续区间、n>0；Post 为回�
 best_fit_nr_free_pages：返回真实空闲页总数，无副作用。
 Requirements：空闲块按地址组织，状态必须兼容原有两个测试函数。
 ```
+
+## P3 Buddy 分配器实现
+
+负责人：国轩 2414132。
+
+```text
+[PROMPT]
+任务：新增 code/kern/mm/buddy_pmm.c、buddy_pmm.h，实现 Buddy 连续页分配，并接入 pmm.c、Makefile。
+操作要求：修改实际文件，注释署 2414132；保留默认 Best-Fit、已有测试、Page 和 pmm_manager 公开定义。
+输出要求：支持 make PMM=buddy qemu，并可切回默认；用 QEMU 4.1.1 编译启动，说明实际占用页数与释放约定。
+
+[RELY]
+阅读 code/kern/mm/{pmm.h,memlayout.h,best_fit_pmm.c}。
+复用 pmm_manager 接口、Page 描述符、page2ppn/page2pa、pages/nbase/npage；物理范围按框架限制。
+
+[GUARANTEE]
+实现 const struct pmm_manager buddy_pmm_manager 及以下 static 接口：
+void buddy_init(void);
+void buddy_init_memmap(struct Page *base, size_t n);
+struct Page *buddy_alloc_pages(size_t n);
+void buddy_free_pages(struct Page *base, size_t n);
+size_t buddy_nr_free_pages(void);
+void buddy_validate(void);
+允许内部状态与 static 辅助函数；保留后续独立添加 buddy_check 的空间。
+
+[SPECIFICATION]
+buddy_init：Pre 为首次初始化或隔离池已无活跃分配；Post 为管理状态为空、空闲计数为零。
+buddy_init_memmap：Pre 为 n>0、区间保留且不与已管理区间重叠；Post 为全部页面可管理，非对齐、非二次幂的首尾页面不丢失。
+buddy_alloc_pages：Pre 为 n>0；成功时返回按实际块大小对齐、至少 n 页的二次幂块，计数扣除实际页数；无合适块或请求过大时返回 NULL，状态不变。
+buddy_free_pages：Pre 为本分配器返回的块及原请求 n；Post 为实际占用页全部回收，所有可合并的同阶伙伴充分合并；重复或与实际块大小不匹配的释放用断言拒绝。
+buddy_nr_free_pages：准确返回空闲页数，无副作用。
+buddy_validate：检查空闲块大小、物理对齐、范围、计数及伙伴合并状态；通过后不改变资源状态。
+Requirements：伙伴关系以物理页号定义，不能误合并其他分配器的块；零页请求用断言拒绝；切换构建配置须使选择代码重新编译。
+```
+
+## P4 Buddy 独立测试
+
+负责人：国轩 2414132。
+
+```text
+[PROMPT]
+任务：在 code/kern/mm/buddy_pmm.c 添加 Buddy 测试，并接入 pmm.c 的初始化检查。
+操作要求：修改实际文件，注释署 2414132；不得改写算法来迎合测试，也不得修改官方测试。
+输出要求：运行测试，说明各断言验证什么；失败时保留现场并分析，不用打印 PASS 代替断言。
+
+[RELY]
+读取已实现的 buddy_pmm_manager 及 code/kern/mm/pmm.h。
+可使用 alloc_pages/free_pages/nr_free_pages、页地址转换、assert、cprintf；掌握请求向上取整到二次幂的接口约定。
+
+[GUARANTEE]
+实现 void buddy_check(void)，在 buddy_pmm.h 声明，并由 pmm_init 调用。
+
+[SPECIFICATION]
+Pre-Condition：物理页初始化完成，当前分配器可用。
+Post-Condition：验证结束后主分配器和空闲总数恢复，测试不影响池外页面或仍在使用的内存。
+Case 1：默认模式用隔离池验证 3/5 页请求、实际占用 4/8 页、地址对齐与不重叠、分裂后重新获得完整 64 页块。
+Case 2：逐页耗尽后返回 NULL；交错释放不能凭空形成连续块；全部释放后能完整合并。
+Case 3：非对齐 93 页区间须恰好返回 93 个唯一且不越界的页面，超大请求失败且状态不变。
+Case 4：Buddy 已是主分配器时，在真实页池上检查分配、释放及计数恢复，不得重置活跃管理状态。
+Requirements：用地址范围、唯一性和资源守恒检验结果，不照抄算法内部的判断作为唯一依据。
+```
+
+## P7 页表与 TLB 调试
+
+负责人：孟子玉 2411963。
+
+```text
+[PROMPT]
+任务：新增 code/tools/debug_mmu.py，并仅增加必要的内核探针，用双 GDB 观察一次真实访存的页表查询、TLB 填充及随后命中。
+操作要求：修改实际文件，注释署 2411963；使用带调试信息的 QEMU 4.1.1，不覆盖日常模拟器，不修改官方测试或强行伪造观测结果。
+输出要求：保存两端原始日志和结果；区分客户虚拟地址、客户物理地址与宿主地址，失败明确报告。
+
+[RELY]
+读取 code/kern/init/{entry.S,init.c}、code/kern/mm/{pmm.h,memlayout.h}。
+RISC-V GDB 调试客户内核，宿主 GDB 调试 QEMU；QEMU 源码中关注 cpu_helper.c 的 get_physical_address/riscv_cpu_tlb_fill、cputlb.c 的加载和填充路径，以及宿主后端的 TLB 快速路径。
+
+[GUARANTEE]
+提供 python3 tools/debug_mmu.py --qemu PATH --out DIR（在 code/ 中执行）。
+如需探针，在 kern/init 下新增，声明与调用一致；脚本负责启动、连接和清理自己的调试进程。
+
+[SPECIFICATION]
+Pre-Condition：内核已编译，两个 GDB 与带符号的 QEMU 4.1.1 可用。
+Post-Condition：原始记录能将具体指令、被访问地址、PTE、翻译结果和 TLB 状态对应起来，退出后不遗留调试进程。
+Case 1：受控访问引发首次 miss，观察 satp、索引、叶子层级、权限及物理地址，正确包含页内偏移。
+Case 2：后续同地址访问命中，结合读值、TLB 项和实际慢路径/填充计数验证，不能只凭输出文字判断。
+Case 3：Bare 模式对照，记录恒等转换与软件 TLB 行为；若根级大页直接命中，如实记录，不声称访问了三级。
+Requirements：支持本机进程调试权限及中文路径；端口和断点范围受控，调试器读取内存不能混作客户实际访存的证据。
+```

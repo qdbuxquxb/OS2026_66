@@ -1,0 +1,99 @@
+Reading symbols from [32m/home/ctf/tools/qemu-build/build-4.1.1-debug/riscv64-softmmu/qemu-system-riscv64[m...
+[?2004h(gdb) source /home/ctf/os/实验二/分次提交/第2版-孟子玉/code/evidence/mmu-live/host-setup.gdb
+[?2004lBreakpoint 1 at [34m0x2e55d3[m: file [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c[m, line 1449.
+Breakpoint 2 at [34m0x39c079[m: file [32m/home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c[m, line 438.
+(gdb) run
+Starting program: [32m/home/ctf/tools/qemu-build/build-4.1.1-debug/riscv64-softmmu/qemu-system-riscv64[m -machine virt -nographic -bios default -device loader,file=/home/ctf/os/实验二/分次提交/第2版-孟子玉/code/bin/ucore.img,addr=0x80200000 -S -gdb tcp:127.0.0.1:56795 -serial file:/home/ctf/os/实验二/分次提交/第2版-孟子玉/code/evidence/mmu-live/qemu.log -monitor none
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "[32m/lib/x86_64-linux-gnu/libthread_db.so.1[m".
+[New Thread 0x7ffff6287640 (LWP 104780)]
+[New Thread 0x7ffff5a05640 (LWP 104781)]
+
+Thread 1 "qemu-system-ris" received signal SIGINT, Interrupt.
+[34m0x00007ffff7118e1e[m in [33m__ppoll[m ([36mfds[m=0x555556301ca0, [36mnfds[m=6, [36mtimeout[m=<optimized out>, [36msigmask[m=0x0) at [32m../sysdeps/unix/sysv/linux/ppoll.c[m:42
+42	../sysdeps/unix/sysv/linux/ppoll.c: No such file or directory.
+(gdb) enable 1 2
+(gdb) continue
+Continuing.
+[Switching to Thread 0x7ffff5a05640 (LWP 104781)]
+DATA LOAD SLOW PATH: addr=0xffffffffc0207010 calls=1
+[m#0  [33mhelper_le_ldq_mmu[m ([36menv[m=0x5555562be2b0, [36maddr[m=18446744072637935632, [36moi[m=49, [36mretaddr[m=140737186365756) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c[m:1449
+#1  [34m0x00007fffee00017a[m in [33mcode_gen_buffer[m ()
+#2  [34m0x000055555585b09b[m in [33mcpu_tb_exec[m ([36mcpu[m=0x5555562b58a0, [36mitb[m=0x7fffee000040 <code_gen_buffer+19>) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cpu-exec.c[m:173
+#3  [34m0x000055555585bee1[m in [33mcpu_loop_exec_tb[m ([36mcpu[m=0x5555562b58a0, [36mtb[m=0x7fffee000040 <code_gen_buffer+19>, [36mlast_tb[m=0x7ffff5a046d8, [36mtb_exit[m=0x7ffff5a046d0) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cpu-exec.c[m:621
+#4  [34m0x000055555585c216[m in [33mcpu_exec[m ([36mcpu[m=0x5555562b58a0) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cpu-exec.c[m:732
+
+Thread 3 "qemu-system-ris" hit Breakpoint 2, [33mriscv_cpu_tlb_fill[m ([36mcs[m=0x5555562b58a0, [36maddress[m=18446744072637935632, [36msize[m=8, [36maccess_type[m=MMU_DATA_LOAD, [36mmmu_idx[m=1, [36mprobe[m=false, [36mretaddr[m=140737186365756) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c[m:438
+438	[31m{[m
+(gdb) set $fill_calls = $fill_calls + 1
+(gdb) set $rv_env = &((RISCVCPU *)cs)->env
+(gdb) set $rv_cpu = (RISCVCPU *)cs
+(gdb) bt 8
+#0  [33mriscv_cpu_tlb_fill[m ([36mcs[m=0x5555562b58a0, [36maddress[m=18446744072637935632, [36msize[m=8, [36maccess_type[m=MMU_DATA_LOAD, [36mmmu_idx[m=1, [36mprobe[m=false, [36mretaddr[m=140737186365756) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c[m:438
+#1  [34m0x000055555583646f[m in [33mtlb_fill[m ([36mcpu[m=0x5555562b58a0, [36maddr[m=18446744072637935632, [36msize[m=8, [36maccess_type[m=MMU_DATA_LOAD, [36mmmu_idx[m=1, [36mretaddr[m=140737186365756) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c[m:878
+#2  [34m0x0000555555839788[m in [33mload_helper[m ([36mfull_load[m=0x555555839552 <helper_le_ldq_mmu>, [36mcode_read[m=false, [36mbig_endian[m=false, [36msize[m=8, [36mretaddr[m=140737186365756, [36moi[m=49, [36maddr[m=18446744072637935632, [36menv[m=0x5555562be2b0) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c[m:1274
+#3  [33mhelper_le_ldq_mmu[m ([36menv[m=0x5555562be2b0, [36maddr[m=18446744072637935632, [36moi[m=49, [36mretaddr[m=140737186365756) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cputlb.c[m:1449
+#4  [34m0x00007fffee00017a[m in [33mcode_gen_buffer[m ()
+#5  [34m0x000055555585b09b[m in [33mcpu_tb_exec[m ([36mcpu[m=0x5555562b58a0, [36mitb[m=0x7fffee000040 <code_gen_buffer+19>) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cpu-exec.c[m:173
+#6  [34m0x000055555585bee1[m in [33mcpu_loop_exec_tb[m ([36mcpu[m=0x5555562b58a0, [36mtb[m=0x7fffee000040 <code_gen_buffer+19>, [36mlast_tb[m=0x7ffff5a046d8, [36mtb_exit[m=0x7ffff5a046d0) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cpu-exec.c[m:621
+#7  [34m0x000055555585c216[m in [33mcpu_exec[m ([36mcpu[m=0x5555562b58a0) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/accel/tcg/cpu-exec.c[m:732
+(More stack frames follow...)
+(gdb) break get_physical_address if addr == 0xffffffffc0207010 && access_type == 0
+Breakpoint 3 at [34m0x5555558ef464[m: file [32m/home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c[m, line 158.
+(gdb) continue
+Continuing.
+
+Thread 3 "qemu-system-ris" hit Breakpoint 3, [33mget_physical_address[m ([36menv[m=0x5555562be2b0, [36mphysical[m=0x7ffff5a03ff0, [36mprot[m=0x7ffff5a03fe4, [36maddr[m=18446744072637935632, [36maccess_type[m=0, [36mmmu_idx[m=1) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c[m:158
+158	[31m{[m
+(gdb) set $pa_ptr = physical
+(gdb) p/x env->satp
+$1 = 0x8000000000080206
+(gdb) p mmu_idx
+$2 = 1
+(gdb) tbreak cpu_helper.c:254 if addr == 0xffffffffc0207010 && access_type == 0
+Temporary breakpoint 4 at [34m0x5555558ef975[m: file [32m/home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c[m, line 254.
+(gdb) continue
+Continuing.
+
+Thread 3 "qemu-system-ris" hit Temporary breakpoint 4, [33mget_physical_address[m ([36menv[m=0x5555562be2b0, [36mphysical[m=0x7ffff5a03ff0, [36mprot[m=0x7ffff5a03fe4, [36maddr[m=18446744072637935632, [36maccess_type[m=0, [36mmmu_idx[m=1) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c[m:254
+254	        target_ulong ppn [31m=[m pte [31m>>[m PTE_PPN_SHIFT[31m;[m
+(gdb) printf "WALK: levels=%d i=%d shift=%d idx=%#lx base=%#lx pte_addr=%#lx pte=%#lx\n", levels, i, ptshift, idx, base, pte_addr, pte
+WALK: levels=3 i=0 shift=18 idx=0x1ff base=0x80206000 pte_addr=0x80206ff8 pte=0x200000cf
+[m(gdb) next
+256	        [01;34mif[m [31m(!([mpte [31m&[m PTE_V[31m))[m [31m{[m
+(gdb) p/x ppn
+$3 = 0x80000
+(gdb) finish
+Run till exit from #0  [33mget_physical_address[m ([36menv[m=0x5555562be2b0, [36mphysical[m=0x7ffff5a03ff0, [36mprot[m=0x7ffff5a03fe4, [36maddr[m=18446744072637935632, [36maccess_type[m=0, [36mmmu_idx[m=1) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c[m:256
+[34m0x00005555558f0140[m in [33mriscv_cpu_tlb_fill[m ([36mcs[m=0x5555562b58a0, [36maddress[m=18446744072637935632, [36msize[m=8, [36maccess_type[m=MMU_DATA_LOAD, [36mmmu_idx[m=1, [36mprobe[m=false, [36mretaddr[m=140737186365756) at [32m/home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c[m:451
+451	    ret [31m=[m [01mget_physical_address[m[31m([menv[31m,[m [31m&[mpa[31m,[m [31m&[mprot[31m,[m address[31m,[m access_type[31m,[m mmu_idx[31m);[m
+Value returned is $4 = 0
+(gdb) printf "TRANSLATED PA=%#lx\n", *$pa_ptr
+TRANSLATED PA=0x80207000
+[m(gdb) disable 3
+(gdb) source /home/ctf/os/实验二/分次提交/第2版-孟子玉/code/evidence/mmu-live/count-fills.gdb
+(gdb) continue
+Continuing.
+
+Thread 1 "qemu-system-ris" received signal SIGINT, Interrupt.
+[Switching to Thread 0x7ffff6e46d40 (LWP 104767)]
+[34m0x00007ffff7118e1e[m in [33m__ppoll[m ([36mfds[m=0x555556301ca0, [36mnfds[m=6, [36mtimeout[m=<optimized out>, [36msigmask[m=0x0) at [32m../sysdeps/unix/sysv/linux/ppoll.c[m:42
+42	../sysdeps/unix/sysv/linux/ppoll.c: No such file or directory.
+(gdb) set $watch = 0xffffffffc0207010
+(gdb) set $index = ($watch >> 12) & ($rv_cpu->neg.tlb.f[1].mask >> 5)
+(gdb) set $entry = &$rv_cpu->neg.tlb.f[1].table[$index]
+(gdb) printf "TLB: index=%lu addr_read=%#lx addend=%#lx host_address=%#lx\n", $index, $entry->addr_read, $entry->addend, $watch + $entry->addend
+TLB: index=7 addr_read=0xffffffffc0207000 addend=0x80001fe00000 host_address=0x7fffe0007010
+[m(gdb) x/gx ($watch + $entry->addend)
+[34m0x7fffe0007010[m:	0x0024141322411185
+(gdb) printf "BEFORE SECOND LOAD: slow=%d fill=%d\n", $slow_calls, $fill_calls
+BEFORE SECOND LOAD: slow=1 fill=1
+[m(gdb) continue
+Continuing.
+
+Thread 1 "qemu-system-ris" received signal SIGINT, Interrupt.
+[34m0x00007ffff7118e1e[m in [33m__ppoll[m ([36mfds[m=0x555556301ca0, [36mnfds[m=6, [36mtimeout[m=<optimized out>, [36msigmask[m=0x0) at [32m../sysdeps/unix/sysv/linux/ppoll.c[m:42
+42	in [32m../sysdeps/unix/sysv/linux/ppoll.c[m
+(gdb) printf "AFTER SECOND LOAD: slow=%d fill=%d\n", $slow_calls, $fill_calls
+AFTER SECOND LOAD: slow=1 fill=1
+[m(gdb) 

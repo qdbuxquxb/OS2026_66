@@ -1,38 +1,38 @@
-Reading symbols from /home/ctf/os/实验二/分次提交/第2版-孟子玉/code/bin/kernel...
+Reading symbols from [32m/home/ctf/os/实验二/提交/lab2/code/bin/kernel[m...
 [?2004h(gdb) set editing off
 [?2004l
 (gdb) set pagination off
 (gdb) set confirm off
-(gdb) target remote 127.0.0.1:56795
-Remote debugging using 127.0.0.1:56795
-0x0000000000001000 in ?? ()
+(gdb) target remote 127.0.0.1:44981
+Remote debugging using 127.0.0.1:44981
+[34m0x0000000000001000[m in [33m??[m ()
 (gdb) break *mmu_load_first
-Breakpoint 1 at 0xffffffffc0200158: file kern/init/mmu_probe.S, line 12.
+Breakpoint 1 at [34m0xffffffffc0200158[m: file [32mkern/init/mmu_probe.S[m, line [2m12[m.
 (gdb) continue
 Continuing.
 
-Breakpoint 1, mmu_debug_load () at kern/init/mmu_probe.S:12
-12	    ld t0, 0(a0)
+Breakpoint 1, [33mmmu_debug_load[m () at [32mkern/init/mmu_probe.S[m:[2m12[m
+[2m12[m	    ld t0, 0(a0)
 (gdb) p/x $pc
-$1 = 0xffffffffc0200158
+[36m$1[m = 0xffffffffc0200158
 (gdb) p/x $a0
-$2 = 0xffffffffc0207010
+[36m$2[m = 0xffffffffc0208010
 (gdb) p/x $satp
-$3 = 0x8000000000080206
+[36m$3[m = 0x8000000000080207
 (gdb) x/3i $pc
-=> 0xffffffffc0200158 <mmu_debug_load+4>:	ld	t0,0(a0)
-   0xffffffffc020015c <mmu_debug_load+8>:	ld	a0,0(a0)
-   0xffffffffc020015e <mmu_debug_load+10>:	ret
+=> [34m0xffffffffc0200158[m <[33mmmu_debug_load[m+4>:	[32mld[m	[31mt0[m,[34m0[m([31ma0[m)
+   [34m0xffffffffc020015c[m <[33mmmu_debug_load[m+8>:	[32mld[m	[31ma0[m,[34m0[m([31ma0[m)
+   [34m0xffffffffc020015e[m <[33mmmu_debug_load[m+10>:	[32mret[m
 (gdb) si
-15	    ld a0, 0(a0)
+[2m15[m	    ld a0, 0(a0)
 (gdb) p/x $pc
-$4 = 0xffffffffc020015c
+[36m$4[m = 0xffffffffc020015c
 (gdb) p/x $t0
-$5 = 0x24141322411185
+[36m$5[m = 0x24141322411185
 (gdb) si
-18	    ret
+[2m18[m	    ret
 (gdb) p/x $a0
-$6 = 0x24141322411185
+[36m$6[m = 0x24141322411185
 (gdb) p/x $pc
-$7 = 0xffffffffc020015e
+[36m$7[m = 0xffffffffc020015e
 (gdb) 

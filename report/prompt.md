@@ -128,6 +128,61 @@ Case 4：Buddy 已是主分配器时，在真实页池上检查分配、释放�
 Requirements：用地址范围、唯一性和资源守恒检验结果，不照抄算法内部的判断作为唯一依据。
 ```
 
+## P5 SLUB 对象分配器实现
+
+负责人：韩东儒 2411185。
+
+```text
+[PROMPT]
+任务：新增 code/kern/mm/slub.c、slub.h，实现单 CPU 的简化 SLUB，为内核提供任意正字节数的对象分配。
+操作要求：修改实际文件，注释署 2411185；仅增加必要初始化调用，不修改底层页分配接口、公开 Page 定义或已有测试。
+输出要求：说明小对象与大对象的资源归属、分配失败和释放约定，并使用 QEMU 4.1.1 编译运行。
+
+[RELY]
+读取 code/kern/mm/pmm.h、memlayout.h 及已完成的两种页分配器。
+底层提供 alloc_pages/free_pages，Buddy 可能多分配到二次幂；page2pa、pa2page、PADDR 和 va_pa_offset 处理地址转换。
+可使用 code/libs 中的链表和内存操作；没有宿主 malloc 或内核堆可依赖。
+
+[GUARANTEE]
+实现 void slub_init(void)、void *kmalloc(size_t size)、void kfree(void *ptr)，在 slub.h 声明；允许 static 辅助函数和内部元数据。
+
+[SPECIFICATION]
+slub_init：Pre 为页管理已就绪且尚无 SLUB 活跃对象；Post 为对象缓存可用且不预占无关页面。
+kmalloc：Pre 为初始化完成。
+Post/Case 1：不超过 2048 字节的正请求，由最小可容纳的 16～2048 字节二次幂大小类服务，优先复用已有空位。
+Post/Case 2：更大请求由连续页支撑；成功结果按 16 字节对齐，满足请求长度，与所有活跃对象不重叠。
+Post/Case 3：零长度、算术溢出或资源不足返回 NULL，不泄漏已取得资源。
+kfree：Pre 为 NULL 或尚未释放的合法返回指针；NULL 无操作，合法对象恢复可复用状态；空 slab 和大对象占用页能正确归还，包括底层 Buddy 的取整占用。
+Requirements：使用 partial/full 状态区分可分配与已满 slab；检查小对象边界与重复释放。无需多核锁、每 CPU 缓存或 NUMA。
+```
+
+## P6 SLUB 独立测试
+
+负责人：韩东儒 2411185。
+
+```text
+[PROMPT]
+任务：在 code/kern/mm/slub.c 添加对象分配测试，并接入 pmm_init。
+操作要求：修改实际文件，注释署 2411185；保留 kmalloc/kfree 行为与已有测试，允许新增 static 测试辅助函数。
+输出要求：分别以 Best-Fit、Buddy 为页分配器运行，保留失败信息与真实结果。
+
+[RELY]
+读取 code/kern/mm/slub.h、pmm.h 及实现中的公开分配约定。
+可依赖 assert、memset、页计数和地址区间比较，不依赖 slab 私有布局作为唯一验证依据。
+
+[GUARANTEE]
+实现 void slub_check(void)，在 slub.h 声明；初始化后调用它。
+
+[SPECIFICATION]
+Pre-Condition：页分配器、SLUB 已初始化，没有外部活跃 SLUB 对象。
+Post-Condition：对象全部释放，空闲页数恢复，测试缓存无遗留对象。
+Case 1：覆盖各大小类的前后边界及 2049、4096、5000、8192 字节，检查对齐，并读写完整请求长度。
+Case 2：300 个小对象覆盖多个 slab；交错释放后验证未释放数据，重新分配复用空位，不额外占页。
+Case 3：耗尽页层后，现有缓存空位仍能分配，新缓存和大对象返回 NULL；释放后资源恢复。
+Case 4：执行 2000 次确定性的混合分配/释放，检查活跃对象内容及范围互不重叠。
+Requirements：包含 kmalloc(0)、极大请求与 kfree(NULL)；两种页分配器均适用，不能假设空闲页可一次连续分配完。
+```
+
 ## P7 页表与 TLB 调试
 
 负责人：孟子玉 2411963。

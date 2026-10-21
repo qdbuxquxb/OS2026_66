@@ -1,0 +1,24 @@
+(gdb) p/x env->satp
+$1 = 0x8000000000080207
+(gdb) p mmu_idx
+$2 = 1
+(gdb) tbreak cpu_helper.c:254 if addr == 0xffffffffc0208010 && access_type == 0
+Temporary breakpoint 4 at 0x5555558ef975: file /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c, line 254.
+(gdb) continue
+Continuing.
+
+Thread 3 "qemu-system-ris" hit Temporary breakpoint 4, get_physical_address (env=0x5555562bda00, physical=0x7ffff5a03ff0, prot=0x7ffff5a03fe4, addr=18446744072637939728, access_type=0, mmu_idx=1) at /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c:254
+254	        target_ulong ppn = pte >> PTE_PPN_SHIFT;
+(gdb) printf "WALK: levels=%d i=%d shift=%d idx=%#lx base=%#lx pte_addr=%#lx pte=%#lx\n", levels, i, ptshift, idx, base, pte_addr, pte
+WALK: levels=3 i=0 shift=18 idx=0x1ff base=0x80207000 pte_addr=0x80207ff8 pte=0x200000cf
+(gdb) next
+256	        if (!(pte & PTE_V)) {
+(gdb) p/x ppn
+$3 = 0x80000
+(gdb) finish
+Run till exit from #0  get_physical_address (env=0x5555562bda00, physical=0x7ffff5a03ff0, prot=0x7ffff5a03fe4, addr=18446744072637939728, access_type=0, mmu_idx=1) at /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c:256
+0x00005555558f0140 in riscv_cpu_tlb_fill (cs=0x5555562b4ff0, address=18446744072637939728, size=8, access_type=MMU_DATA_LOAD, mmu_idx=1, probe=false, retaddr=140737186365756) at /home/ctf/tools/qemu-build/qemu-4.1.1/target/riscv/cpu_helper.c:451
+451	    ret = get_physical_address(env, &pa, &prot, address, access_type, mmu_idx);
+Value returned is $4 = 0
+(gdb) printf "TRANSLATED PA=%#lx\n", *$pa_ptr
+TRANSLATED PA=0x80208000

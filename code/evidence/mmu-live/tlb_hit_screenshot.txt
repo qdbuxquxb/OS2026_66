@@ -1,0 +1,18 @@
+(gdb) set $watch = 0xffffffffc0208010
+(gdb) set $index = ($watch >> 12) & ($rv_cpu->neg.tlb.f[1].mask >> 5)
+(gdb) set $entry = &$rv_cpu->neg.tlb.f[1].table[$index]
+(gdb) printf "TLB: index=%lu addr_read=%#lx addend=%#lx host_address=%#lx\n", $index, $entry->addr_read, $entry->addend, $watch + $entry->addend
+TLB: index=8 addr_read=0xffffffffc0208000 addend=0x80001fe00000 host_address=0x7fffe0008010
+(gdb) x/gx ($watch + $entry->addend)
+0x7fffe0008010:	0x0024141322411185
+(gdb) printf "BEFORE SECOND LOAD: slow=%d fill=%d\n", $slow_calls, $fill_calls
+BEFORE SECOND LOAD: slow=1 fill=1
+(gdb) continue
+^CContinuing.
+
+Thread 1 "qemu-system-ris" received signal SIGINT, Interrupt.
+0x00007ffff7118e1e in __ppoll (fds=0x555556301410, nfds=6, timeout=<optimized out>, sigmask=0x0) at ../sysdeps/unix/sysv/linux/ppoll.c:42
+42	in ../sysdeps/unix/sysv/linux/ppoll.c
+(gdb) printf "AFTER SECOND LOAD: slow=%d fill=%d\n", $slow_calls, $fill_calls
+AFTER SECOND LOAD: slow=1 fill=1
+(gdb)

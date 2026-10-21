@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "builds": [
     "best-fit",
     "buddy"
@@ -18,9 +18,9 @@
   ],
   "grade": "20/20",
   "symbols": {
-    "boot_page_table_sv39": "0xffffffffc0206000",
-    "end": "0xffffffffc0207188",
-    "mmu_debug_word": "0xffffffffc0207010",
+    "boot_page_table_sv39": "0xffffffffc0207000",
+    "end": "0xffffffffc02086c8",
+    "mmu_debug_word": "0xffffffffc0208010",
     "mmu_load_first": "0xffffffffc0200158"
   }
 }

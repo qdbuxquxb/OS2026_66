@@ -30,16 +30,17 @@ DTB init completed
 (THU.CST) os is loading ...
 Special kernel symbols:
   entry  0xffffffffc02000d6 (virtual)
-  etext  0xffffffffc0201a94 (virtual)
-  edata  0xffffffffc0206020 (virtual)
-  end    0xffffffffc0206170 (virtual)
-Kernel executable memory footprint: 25KB
+  etext  0xffffffffc0202644 (virtual)
+  edata  0xffffffffc0207020 (virtual)
+  end    0xffffffffc02076b0 (virtual)
+Kernel executable memory footprint: 30KB
 memory management: buddy_pmm_manager
 physical memory map:
   memory: 0x0000000008000000, [0x0000000080000000, 0x0000000087ffffff].
 check_alloc_page() succeeded!
 buddy_check() succeeded! (live Buddy manager)
-satp virtual address: 0xffffffffc0205000
-satp physical address: 0x0000000080205000
+slub_check() succeeded! (size classes, reuse, reclaim, OOM, 2000 mixed operations)
+satp virtual address: 0xffffffffc0206000
+satp physical address: 0x0000000080206000
 mmu_probe() succeeded!
 qemu-system-riscv64: terminating on signal 15 from pid 103856 (python3)

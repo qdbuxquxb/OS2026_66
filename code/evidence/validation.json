@@ -1,0 +1,158 @@
+{
+  "date": "2026-10-20",
+  "students": [
+    "2414132",
+    "2411185",
+    "2411963"
+  ],
+  "qemu": "QEMU emulator version 4.1.1",
+  "default_pmm": "best_fit_pmm_manager",
+  "official_grade": "20/20",
+  "boot_cases": [
+    {
+      "pmm": "best-fit",
+      "ram_mib": 64,
+      "result": "PASS",
+      "idle_kernel_terminated_by_test": true
+    },
+    {
+      "pmm": "best-fit",
+      "ram_mib": 128,
+      "result": "PASS",
+      "idle_kernel_terminated_by_test": true
+    },
+    {
+      "pmm": "best-fit",
+      "ram_mib": 256,
+      "result": "PASS",
+      "idle_kernel_terminated_by_test": true
+    },
+    {
+      "pmm": "buddy",
+      "ram_mib": 64,
+      "result": "PASS",
+      "idle_kernel_terminated_by_test": true
+    },
+    {
+      "pmm": "buddy",
+      "ram_mib": 128,
+      "result": "PASS",
+      "idle_kernel_terminated_by_test": true
+    },
+    {
+      "pmm": "buddy",
+      "ram_mib": 256,
+      "result": "PASS",
+      "idle_kernel_terminated_by_test": true
+    }
+  ],
+  "page_init_boundary_cases": [
+    {
+      "case": "zero_size",
+      "result": "PASS"
+    },
+    {
+      "case": "overflow",
+      "result": "PASS"
+    },
+    {
+      "case": "wrong_base",
+      "result": "PASS"
+    },
+    {
+      "case": "descriptors_do_not_fit",
+      "result": "PASS"
+    },
+    {
+      "case": "no_complete_free_page",
+      "result": "PASS"
+    },
+    {
+      "case": "partial_tail_page",
+      "result": "PASS"
+    },
+    {
+      "case": "clamped_upper_bound",
+      "result": "PASS"
+    }
+  ],
+  "mmu": {
+    "virtual_address": "0xffffffffc0208010",
+    "physical_page_base": "0x80208000",
+    "physical_address": "0x80208010",
+    "pte": "0x200000cf",
+    "soft_tlb_read_tag": "0xffffffffc0208000",
+    "leaf_size": "1 GiB",
+    "slow_load_calls_after_two_loads": 1,
+    "tlb_fills_after_two_loads": 1,
+    "loaded_value": "0x24141322411185",
+    "two_gdb": "PASS",
+    "bare_identity_translation_and_soft_tlb": "PASS"
+  },
+  "official_tests_unchanged": true,
+  "best_fit_original_tests_sha256": "b6c6f8cd0608f21e2710f19ce23847f74c36b68d67dea90e8eef9faacdc9022a",
+  "original_sources_backup": "/home/ctf/tools/oslab-lab2-work/lab2-original.tar.gz",
+  "changed_files": [
+    {
+      "file": "Makefile",
+      "change": "modified"
+    },
+    {
+      "file": "kern/init/init.c",
+      "change": "modified"
+    },
+    {
+      "file": "kern/init/mmu_probe.S",
+      "change": "added"
+    },
+    {
+      "file": "kern/mm/best_fit_pmm.c",
+      "change": "modified"
+    },
+    {
+      "file": "kern/mm/buddy_pmm.c",
+      "change": "added"
+    },
+    {
+      "file": "kern/mm/buddy_pmm.h",
+      "change": "added"
+    },
+    {
+      "file": "kern/mm/pmm.c",
+      "change": "modified"
+    },
+    {
+      "file": "kern/mm/slub.c",
+      "change": "added"
+    },
+    {
+      "file": "kern/mm/slub.h",
+      "change": "added"
+    },
+    {
+      "file": "tools/check_boot.py",
+      "change": "added"
+    },
+    {
+      "file": "tools/check_page_init.py",
+      "change": "added"
+    },
+    {
+      "file": "tools/debug_mmu.py",
+      "change": "added"
+    },
+    {
+      "file": "tools/implementation-specs.txt",
+      "change": "added"
+    }
+  ],
+  "limitations": [
+    "Teaching allocator is single CPU; SLUB has no per-CPU or NUMA support.",
+    "Managed physical memory upper bound remains the framework limit 0x88000000."
+  ],
+  "report_written": true,
+  "report_path": "../report/report.md",
+  "report_status": "draft with current group prompts",
+  "prompt_path": "../report/prompt.md",
+  "prompt_reproduction_feedback": "User reports teammate reproduced using the current prompts; no new test score asserted."
+}

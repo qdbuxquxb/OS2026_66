@@ -1,0 +1,30 @@
+[
+  {
+    "case": "zero_size",
+    "result": "PASS"
+  },
+  {
+    "case": "overflow",
+    "result": "PASS"
+  },
+  {
+    "case": "wrong_base",
+    "result": "PASS"
+  },
+  {
+    "case": "descriptors_do_not_fit",
+    "result": "PASS"
+  },
+  {
+    "case": "no_complete_free_page",
+    "result": "PASS"
+  },
+  {
+    "case": "partial_tail_page",
+    "result": "PASS"
+  },
+  {
+    "case": "clamped_upper_bound",
+    "result": "PASS"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "virtual_address": "0xffffffffc0208010",
+  "physical_page_base": "0x80208000",
+  "physical_address": "0x80208010",
+  "pte": "0x200000cf",
+  "soft_tlb_read_tag": "0xffffffffc0208000",
+  "leaf_size": "1 GiB",
+  "slow_load_calls_after_two_loads": 1,
+  "tlb_fills_after_two_loads": 1,
+  "loaded_value": "0x24141322411185",
+  "two_gdb": "PASS",
+  "bare_identity_translation_and_soft_tlb": "PASS"
+}

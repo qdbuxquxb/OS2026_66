@@ -1,0 +1,37 @@
+Reading symbols from /home/ctf/os/实验二/lab2/lab2_new/bin/kernel...
+(gdb) set editing off
+(gdb) set pagination off
+(gdb) set confirm off
+(gdb) target remote 127.0.0.1:46191
+Remote debugging using 127.0.0.1:46191
+0x0000000000001000 in ?? ()
+(gdb) break *mmu_load_first
+Breakpoint 1 at 0xffffffffc0200158: file kern/init/mmu_probe.S, line 12.
+(gdb) continue
+Continuing.
+
+Breakpoint 1, mmu_debug_load () at kern/init/mmu_probe.S:12
+12	    ld t0, 0(a0)
+(gdb) p/x $pc
+$1 = 0xffffffffc0200158
+(gdb) p/x $a0
+$2 = 0xffffffffc0208010
+(gdb) p/x $satp
+$3 = 0x8000000000080207
+(gdb) x/3i $pc
+=> 0xffffffffc0200158 <mmu_debug_load+4>:	ld	t0,0(a0)
+   0xffffffffc020015c <mmu_debug_load+8>:	ld	a0,0(a0)
+   0xffffffffc020015e <mmu_debug_load+10>:	ret
+(gdb) si
+15	    ld a0, 0(a0)
+(gdb) p/x $pc
+$4 = 0xffffffffc020015c
+(gdb) p/x $t0
+$5 = 0x24141322411185
+(gdb) si
+18	    ret
+(gdb) p/x $a0
+$6 = 0x24141322411185
+(gdb) p/x $pc
+$7 = 0xffffffffc020015e
+(gdb) 

@@ -1,0 +1,12 @@
+0x0000000000001000 in ?? ()
+Breakpoint 1 at 0xffffffffc0201e2a: file kern/mm/pmm.c, line 42.
+
+Breakpoint 1, pmm_init () at kern/mm/pmm.c:114
+114	    init_pmm_manager();
+Breakpoint 2 at 0xffffffffc0200f82: file kern/mm/best_fit_pmm.c, line 53.
+Breakpoint 3 at 0xffffffffc0200218: file kern/debug/panic.c, line 12.
+
+Breakpoint 3, __panic (file=file@entry=0xffffffffc0203c40 "kern/mm/pmm.c", line=line@entry=92, fmt=fmt@entry=0xffffffffc0203cd8 "not enough memory for page descriptors") at kern/debug/panic.c:12
+12	    if (is_panic) {
+PANIC=not enough memory for page descriptors
+MEMMAP_CALLS=0

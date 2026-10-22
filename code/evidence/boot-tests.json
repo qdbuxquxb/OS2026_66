@@ -1,0 +1,38 @@
+[
+  {
+    "pmm": "best-fit",
+    "ram_mib": 64,
+    "result": "PASS",
+    "idle_kernel_terminated_by_test": true
+  },
+  {
+    "pmm": "best-fit",
+    "ram_mib": 128,
+    "result": "PASS",
+    "idle_kernel_terminated_by_test": true
+  },
+  {
+    "pmm": "best-fit",
+    "ram_mib": 256,
+    "result": "PASS",
+    "idle_kernel_terminated_by_test": true
+  },
+  {
+    "pmm": "buddy",
+    "ram_mib": 64,
+    "result": "PASS",
+    "idle_kernel_terminated_by_test": true
+  },
+  {
+    "pmm": "buddy",
+    "ram_mib": 128,
+    "result": "PASS",
+    "idle_kernel_terminated_by_test": true
+  },
+  {
+    "pmm": "buddy",
+    "ram_mib": 256,
+    "result": "PASS",
+    "idle_kernel_terminated_by_test": true
+  }
+]

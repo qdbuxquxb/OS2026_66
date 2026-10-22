@@ -1,0 +1,11 @@
+0x0000000000001000 in ?? ()
+Breakpoint 1 at 0xffffffffc0201e2a: file kern/mm/pmm.c, line 42.
+
+Breakpoint 1, pmm_init () at kern/mm/pmm.c:114
+114	    init_pmm_manager();
+Breakpoint 2 at 0xffffffffc0200f82: file kern/mm/best_fit_pmm.c, line 53.
+Breakpoint 3 at 0xffffffffc0201f4c: file kern/mm/pmm.c, line 121.
+
+Breakpoint 3, check_alloc_page () at kern/mm/pmm.c:135
+135	    pmm_manager->check();
+INIT_RETURN: npage=0x88000 nr_free=31927 calls=1

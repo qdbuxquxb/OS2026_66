@@ -43,4 +43,4 @@ slub_check() succeeded! (size classes, reuse, reclaim, OOM, 2000 mixed operation
 satp virtual address: 0xffffffffc0207000
 satp physical address: 0x0000000080207000
 mmu_probe() succeeded!
-qemu-system-riscv64: terminating on signal 15 from pid 103856 (python3)
+qemu-system-riscv64: terminating on signal 15 from pid 20838 (python3)

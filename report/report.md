@@ -79,7 +79,7 @@ report/
 
 ## 四、实验内容与实现
 
-我们用 `[PROMPT]`、`[RELY]`、`[GUARANTEE]` 和 `[SPECIFICATION]` 分别描述任务、已有资源、接口及行为约束。对应提示词汇总见 [prompt.md](./prompt.md)。
+我们将物理页初始化、页分配、对象分配和调试分别组织为任务，共使用 7 份提示词，完整汇总见 [prompt.md](./prompt.md)。每份提示词先限定已有接口和可用资源，再用前置条件、后置条件及边界情形描述预期行为。Buddy 和 SLUB 的实现与测试分别使用独立提示词，测试侧重返回地址、数据内容和资源守恒，避免只检查内部标记。
 
 ### 4.1 功能模块一：物理内存探测与页描述符初始化
 
@@ -575,6 +575,8 @@ BARE_TLB_FILL: va=0x80200000 pa=0x80200000 mmu_idx=1
 
 **页基址与字节地址不能混用。** 最初调试脚本把 `get_physical_address()` 返回的 `0x80208000` 直接与目标字节物理地址比较，断言失败。结合填充代码可见，这里用于建立页映射，还应结合原地址的页内偏移。补上 `0x10` 后得到 `0x80208010`，与预期一致。
 
+**调试断点也会影响测试计数。** 边界检查中按函数名设置 `best_fit_init_memmap` 断点时，GDB 为优化后的函数设置了两个位置，一次正常初始化被计数两次。改为在 `*best_fit_init_memmap` 的入口地址设置断点后，才能准确检查“没有完整空闲页时调用次数为零”。
+
 -----
 
 ## 五、测试与验证
@@ -629,16 +631,36 @@ Total Score: 20/20
 
 ![官方评分记录](./images/make_grade.png)
 
-### 5.3 SLUB 与双分配器检查
+### 5.3 补充测试
 
-分别以 Best-Fit 和 Buddy 为页分配器启动 128 MiB RAM 的内核，页面分配、Buddy、SLUB 和 MMU 探针检查均通过。SLUB 检查覆盖大小类边界、完整内容读写、多 slab 复用、页层耗尽及 2000 次混合操作。
+| 验证项目 | 结果 |
+| --- | --- |
+| Best-Fit，64/128/256 MiB RAM | 三种配置均完成启动及各项内核自检 |
+| Buddy，64/128/256 MiB RAM | 三种配置均完成启动及各项内核自检 |
+| 无效设备树结果 | 零长度、地址溢出、错误基址均在初始化时拒绝 |
+| 描述符空间不足 | 进入错误处理，没有注册空闲区 |
+| 无完整空闲页及非整页尾部 | 初始化返回时空闲数为零，`init_memmap()` 调用次数为零 |
+| 管理上界截断 | 即使报告 256 MiB，`npage` 仍限制在 `0x88000` |
+| 双 GDB 页表/TLB 调试 | 实际观察页表项、转换结果、第一次填充及第二次命中 |
+| Bare 模式对照 | 观察恒等转换和 QEMU 软件 TLB 填充 |
 
-- [Best-Fit 启动日志](../code/evidence/qemu-best-fit-128M.log)
-- [Buddy 启动日志](../code/evidence/qemu-buddy-128M.log)
-- [双 GDB 调试结果](../code/evidence/mmu-live/result.json)
-- [RISC-V GDB 记录](../code/evidence/mmu-live/guest-gdb.log)
-- [QEMU 源码 GDB 记录](../code/evidence/mmu-live/host-gdb.log)
-- [Bare 模式记录](../code/evidence/mmu-live/bare-host-gdb.log)
+使用 `make PMM=buddy qemu` 切换为 Buddy 主分配器，运行结果如下。
+
+**图 6：Buddy 启动。** 当前策略为 `buddy_pmm_manager`，SLUB 和 MMU 探针检查也正常完成。
+
+![Buddy 启动记录](./images/buddy_run.png)
+
+256 MiB 启动验证使用了更大的模拟 RAM，但没有扩大框架的内存管理上界。当前最大管理范围仍是 `[0x80000000, 0x88000000)`，其中还要扣除固件、内核和描述符占用。
+
+补充测试使用了三个脚本：`check_boot.py` 分别构建两种分配器，在三种 RAM 配置下检查启动结果，结束后恢复默认 Best-Fit；`check_page_init.py` 检查物理内存初始化的七种边界情形；`debug_mmu.py` 使用带调试信息的 QEMU 4.1.1，记录页表查询、TLB 填充与命中的过程。
+
+结果与过程记录：
+
+- [启动测试结果](../code/evidence/boot-tests.json)
+- [初始化边界测试结果](../code/evidence/page-init/result.json)
+- [RISC-V GDB 原始记录](../code/evidence/mmu-live/guest-gdb.log)
+- [QEMU 源码 GDB 原始记录](../code/evidence/mmu-live/host-gdb.log)
+- [Bare 模式调试记录](../code/evidence/mmu-live/bare-host-gdb.log)
 
 -----
 
@@ -656,6 +678,14 @@ Total Score: 20/20
 | TLB 与地址转换 | 缓存可以避免重复页表查询；通过 QEMU 实现还能看到客户物理地址、QEMU 进程内地址与模拟器缓存之间的区别 |
 
 本实验虽然开启了分页，但主要使用固定的启动映射，还没有实现完整的进程虚拟地址空间管理。按需分页、缺页处理与换页、写时复制、进程间隔离，以及多核环境下的分配同步和 TLB 一致性，都没有在本次实验中完成。
+
+### AI 协作开发的经验
+
+这次协作中，最有帮助的是先弄清框架中已经存在的接口和测试约定，再围绕这些约定实现功能。例如 `npage` 是页号上界，Best-Fit 的测试会直接保存恢复内部链表状态，这些信息如果理解有偏差，即使算法思路正确也可能无法接入框架。
+
+测试也需要结合实现之外的现象判断。Buddy 测试检查地址唯一性、块范围和回收后的页数，SLUB 测试检查完整对象内容与重叠区间，这些检查比单纯重复分配函数的内部判断更容易发现问题。官方评分通过之后，我们仍分别启动两种分配器，并检查初始化边界。
+
+页表调试中的地址偏移问题让我们认识到，调试器打印出的值还需要放回调用语境中理解。`0x80208000` 与 `0x80208010` 的差别来自页内偏移；Bare 模式仍出现软件 TLB 填充，也要结合 QEMU 的进程内内存访问方式解释。我们先借助 AI 定位相关函数，再对照源码、寄存器和调用栈检查实际执行过程，才确定这两处现象的原因。
 
 -----
 

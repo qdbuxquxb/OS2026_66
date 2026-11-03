@@ -13,8 +13,8 @@
 + cc kern/mm/best_fit_pmm.c
 + cc kern/mm/default_pmm.c
 + cc kern/mm/pmm.c
-+ cc libs/printfmt.c
 + cc libs/readline.c
++ cc libs/printfmt.c
 + cc libs/sbi.c
 + cc libs/string.c
 + ld bin/kernel

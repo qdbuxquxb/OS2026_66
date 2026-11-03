@@ -94,15 +94,17 @@ OpenSBI 运行在 M 模式，内核运行在 S 模式。M 模式通过 `mideleg`
 
 ### 3.2 功能的逐步实现
 
-1. 衔接页初始化和 Best-Fit，保留页分配接口的中断保护。
-2. 根据 `SAVE_ALL` 核对 Trap frame，完成 `RESTORE_ALL` 与入口到 `trap()` 的调用。
-3. 初始化统一 Trap 入口，运行物理内存自检。
+1. **补齐前序内存管理。** 将实验二的 `page_init()` 和 Best-Fit 管理函数接入本次框架，使内核能够先完成初始化与页分配自检，并保留实验三新加的中断保护。
+2. **确定 Trap frame 布局。** 对照 `SAVE_ALL` 和 `struct trapframe`，核对每个通用寄存器及 CSR 对应的栈内偏移，特别是原始 `sp` 的保存位置。
+3. **完成入口与恢复。** `__alltraps` 将当前栈顶作为 C 函数参数；`RESTORE_ALL` 从同一 Trap frame 恢复返回状态和通用寄存器，最后交给 `sret`。
+4. **实现具体处理。** 持续处理 S 模式时钟中断，识别非法指令和断点异常，并提供其他类型的提示或 Trap frame 输出。
+5. **验证返回行为。** 通过正常启动检查页分配自检、持续时钟输出和正常关机。
 
 -----
 
 ## 四、实验内容与实现
 
-已完成实验二代码衔接和 Trap 入口与上下文恢复，对应提示词 P1、P2，见 [prompt.md](./prompt.md)。
+实验二代码衔接、Trap 入口与恢复、中断与异常处理分别对应提示词 P1～P3，完整内容见 [prompt.md](./prompt.md)。
 
 ### 4.1 实验二代码衔接
 
@@ -184,7 +186,7 @@ Requirements：正确处理 x2 的特殊保存方式、栈对齐和调用造成�
 
 这种编码也兼容旧版直接保存 4 字节对齐入口地址的方式：旧地址最低两位原本就是零，在加入模式字段后仍表示 Direct 模式。
 
-`kern_init()` 在 `pmm_init()` 前后调用 `idt_init()`，完成页分配自检后进入主循环。当前保留中断与异常的 Trap frame 诊断函数，时钟初始化和使能将在具体处理函数完成后接入。
+`kern_init()` 沿用框架，在 `pmm_init()` 前后调用 `idt_init()`，随后依次执行 `clock_init()`、`intr_enable()`，最后进入主循环。这样，在允许时钟中断响应之前，入口地址和第一个时钟事件都已准备好。
 
 进入 S 模式 Trap 时，硬件将原 `SIE` 保存到 `SPIE`，清除 `SIE`，并在 `SPP` 中记录来源特权级。`SAVE_ALL` 保存的是这时的 `sstatus`，其中 `SPIE` 保留了返回时需要恢复的中断使能状态。
 
@@ -236,7 +238,115 @@ jal trap
 
 `sret` 根据 `sstatus.SPP` 决定返回特权级，并将 `SPIE` 中保存的中断使能状态恢复到 `SIE`。本实验处理的 Trap 来自内核 S 模式，保存的 `SPP` 为 1，因此 `sret` 返回后继续在 S 模式运行。框架的 `trap_in_kernel(tf)` 也是通过检查保存的 `SPP` 判断 Trap 是否来自内核。
 
-### 4.3 实现与验证中的问题
+### 4.3 功能模块二：中断与异常处理
+
+**负责人：** 2411963-孟子玉
+
+#### 任务提示词（P3）
+
+```text
+[PROMPT]
+任务：在 code/kern/trap/trap.c 的 lab3 位置实现中断与异常处理。
+操作：修改实际文件，注释署 2411963；保留已有函数和签名，只加必要 include/常量，不改官方测试。
+输出：用 QEMU 4.1.1 检查运行行为并记录结果；SHUTDOWN_AFTER 未定义时取 10，并说明这一选择。
+
+[RELY]
+读取 trap.h、driver/clock.{c,h}、libs/{riscv.h,sbi.h}。依赖 trapframe、ticks、TICK_NUM、原因宏、clock_set_next_event、print_ticks、print_trapframe、sbi_shutdown。
+
+[GUARANTEE]
+实现 void interrupt_handler(struct trapframe *tf) 和 void exception_handler(struct trapframe *tf)。
+
+[SPECIFICATION]
+interrupt_handler：Pre 为有效 frame；Post 为按去掉中断标志的原因号分发。每次 IRQ_S_TIMER 都安排后续事件且 ticks 恰增一次，每 TICK_NUM 次打印一次统计，累计 SHUTDOWN_AFTER 次统计后关机；不推进 epc。
+Case：U/S/M 的软件、定时器、外部中断输出相应类型提示，S 定时器执行上述逻辑。未知类型打印 Unknown interrupt: cause %lu 并输出 frame；S 软件提示为 Supervisor software interrupt。
+exception_handler：Pre 为有效 frame，待跳过的指令位于可读内核映射；非法指令输出 Illegal instruction at 0x%016lx\n，断点输出 Breakpoint at 0x%016lx\n；随后按目标支持的 16/32 位编码推进 epc，返回后不重复执行该指令。
+Case：其他异常只输出 frame，不推进 epc，不声称恢复成功。
+Requirements：不实现用户态、缺页恢复或设备驱动，不假定所有异常指令都长 4 字节。
+```
+
+#### Spec 与提示词设计
+
+时钟中断的规格要求每次续设事件并累计计数，每 100 次输出统计，输出 10 次后关机。异常处理的规格要求输出原因和地址，再按 16 位或 32 位指令长度更新 `epc`。提示词将其他类型的处理约定为输出提示或 Trap frame，便于逐项检查各个分支。
+
+在 `code/kern/trap/trap.c` 的指定位置实现以下两个函数：
+
+```c
+void interrupt_handler(struct trapframe *tf);
+void exception_handler(struct trapframe *tf);
+```
+
+#### Trap 类型识别
+
+框架已有的 `trap_dispatch()` 将 `tf->cause` 转为有符号整数，利用最高位区分中断和异常：最高位为 1 时进入 `interrupt_handler()`，否则进入 `exception_handler()`。
+
+处理中断时，先清除最高位，再根据剩余原因编号进行分发。实现区分用户、监督者和机器级的软件中断、定时器中断和外部中断。除 S 模式时钟中断外，其他已列出的类型输出对应提示；未知类型输出原因编号，并调用 `print_trapframe(tf)` 保存诊断信息。
+
+#### 持续时钟中断
+
+框架的 `clock_init()` 设置 `sie.STIE`，安排第一个时钟事件，将 `ticks` 置零。随后 `intr_enable()` 设置 `sstatus.SIE`，允许 S 模式响应中断。
+
+QEMU 的时间基准为 10 MHz，框架 `timebase` 为 100000，因此每次设置的目标时刻约在当前时间的 10 ms 之后。`clock_set_next_event()` 通过 `sbi_set_timer()` 请求 OpenSBI 设置下一次时钟事件。设置的目标时刻由 `rdtime` 读取的当前时间加上 `timebase` 得到。
+
+S 模式时钟处理的核心代码为：
+
+```c
+clock_set_next_event();
+++ticks;
+if (ticks % TICK_NUM == 0) {
+    print_ticks();
+    if (ticks / TICK_NUM >= SHUTDOWN_AFTER) {
+        sbi_shutdown();
+    }
+}
+```
+
+OpenSBI 每次设置一个时钟事件，因此处理函数在每次触发后续设下一次事件，再累计 `ticks`，形成持续的时钟中断。
+
+`TICK_NUM` 为 100，每累计 100 次中断输出一行 `100 ticks`，全局计数器继续递增。由于下一次事件按处理时的当前时间设置，实际输出间隔还包含中断处理和模拟器运行的延迟。
+
+按照手册的关机要求，我们补充定义 `SHUTDOWN_AFTER` 为 10。第 1000 次时钟中断完成后，内核输出第 10 行统计信息，随后调用 `sbi_shutdown()`。
+
+#### 非法指令与断点异常
+
+对于 `CAUSE_ILLEGAL_INSTRUCTION` 和 `CAUSE_BREAKPOINT`，分别输出：
+
+```text
+Illegal instruction at 0x...
+Breakpoint at 0x...
+```
+
+输出地址来自 `tf->epc`，即触发异常的指令地址。处理完成后，需要跳过本实验约定可忽略的异常指令。如果保持原地址不变，`sret` 会回到同一条指令并再次触发异常。
+
+本实验目标使用 16 位压缩指令和 32 位基本指令。处理函数读取异常指令的第一个 16 位半字，根据最低两位区分长度：
+
+```c
+uint16_t instruction = *(volatile const uint16_t *)tf->epc;
+tf->epc += (instruction & 3) == 3 ? 4 : 2;
+```
+
+在当前目标支持的这两种指令长度中，最低两位为 `11` 时按 4 字节推进，其余按 2 字节推进。读取第一个半字即可区分。
+
+异常测试指令位于可读的内核映射中，处理函数可以直接读取其编码。其他异常调用 `print_trapframe(tf)` 输出现场，并保留原 `epc`。
+
+时钟中断属于异步事件，处理函数不推进 `epc`，返回时继续原执行流；非法指令和断点属于当前指令触发的同步异常，本实验则明确跳过触发指令。这是两种返回位置处理的区别。
+
+### 4.4 中断保护与物理页分配
+
+**负责人：** 2411185-韩东儒
+
+框架在 `code/kern/sync/sync.h` 中提供保存、关闭和恢复中断状态的接口。`__intr_save()` 先检查 `sstatus.SIE`：原来开启时关闭中断并返回真；原来关闭时返回假。`__intr_restore(flag)` 只在保存结果为真时重新开启中断。
+
+因此，内存管理接口的逻辑是“保存状态、关闭中断、访问分配器、恢复原状态”。如果无论进入时是否关闭中断，都在退出时调用 `intr_enable()`，内层操作就可能破坏外层临界区的保护。
+
+嵌套使用时，外层若原来开中断，会保存真并关中断；内层看到中断已关闭，保存假，退出内层后仍保持关闭，直到外层退出才重新开启。补充测试检查了这一行为。
+
+`local_intr_save(x)` 用 `do { ... } while (0)` 包装，使宏在调用处表现为一条完整语句，便于放入 `if/else` 等控制结构，并提供局部语句块。循环条件恒为零，语句块只执行一次。
+
+页描述符的状态位还使用了 `code/libs/atomic.h` 中的位操作。RV64 下，`set_bit()`、`clear_bit()`、`change_bit()` 分别通过 `amoor.d`、`amoand.d`、`amoxor.d` 完成原子的读—改—写，`test_bit()` 用于读取状态位。因此，`SetPageReserved()`、`SetPageProperty()` 等操作保留了实验三的原子位更新方式。
+
+本实验运行单个 hart，关闭本地中断后，页分配器的临界区可以连续执行。多 hart 环境下，共享数据还需要配合锁等同步机制保护。
+
+### 4.5 实现与验证中的问题
 
 **旧 CSR 名称与新版汇编器不兼容。** 首次编译时，汇编器报告 `unknown CSR 'sbadaddr'`。框架沿用旧名称，而该寄存器在当前命名中为 `stval`，编号是 `0x143`。我们在 `code/libs/riscv.h` 中增加仅对汇编生效的 `sbadaddr` 到 `0x143` 的别名，保留了原有 `SAVE_ALL` 的指令和保存布局，再编译通过。
 
@@ -246,22 +356,45 @@ jal trap
 
 ## 五、测试与验证
 
-在 `code/` 中使用 QEMU 4.1.1 编译并启动内核，页分配自检通过，显示物理内存范围和启动页表地址后进入主循环。本阶段未开启时钟中断，运行日志中没有时钟统计输出。
+### 5.1 编译和正常启动
+
+在 `lab3` 分支的仓库根目录执行：
+
+```bash
+cd code
+qemu-system-riscv64 --version
+make
+make qemu
+```
+
+版本输出为 `QEMU emulator version 4.1.1`，编译成功生成 `bin/kernel` 和 `bin/ucore.img`。[默认启动日志](../code/evidence/qemu-default.log)的关键内容如下：
 
 ```text
 memory management: best_fit_pmm_manager
+physical memory map:
+  memory: 0x0000000008000000, [0x0000000080000000, 0x0000000087ffffff].
 check_alloc_page() succeeded!
+satp virtual address: 0xffffffffc0205000
+satp physical address: 0x0000000080205000
+++ setup timer interrupts
+100 ticks
 ```
 
-记录见 [编译日志](../code/evidence/build.log)和[启动日志](../code/evidence/qemu-stage1.log)。测试程序收集到启动结果后终止处于主循环的模拟器。Trap 恢复与入口汇编已通过编译，异常返回与持续时钟的运行检查在处理函数接入后进行。
+日志中 `100 ticks` 共出现 10 次，之后模拟器结束运行。终端显示 `make qemu exit status: 0`，关机路径正常完成。
+
+### 5.2 测试截图
+
+**图 1：QEMU 启动、时钟统计与关机。** 正常启动完成页分配自检，输出 10 行 `100 ticks`，退出状态为 0。
+
+![图 1：QEMU 启动、时钟统计与关机](./images/boot_timer.png)
 
 -----
 
 ## 六、实验总结与收获
 
-页初始化使分配器获得可用物理页，统一 Trap 入口则为中断与异常处理准备了执行现场。两部分都依赖准确的地址和布局关系：页描述符需要对应物理页，恢复代码需要对应保存时的栈内偏移。
+本阶段将上下文恢复与具体处理函数接在一起。时钟处理函数每次续设事件，累计 100 次输出统计，输出 10 次后关机；非法指令和断点异常则根据指令长度调整返回位置。
 
-原始 `sp` 保存在 x2 槽位，恢复时最后读回。结合结构体和汇编逐项检查后，我们理解了 Trap frame 如何连接汇编入口与 C 函数。后续将接入具体处理函数，检查处理后的返回状态。
+正常启动验证了中断能够多次进入和返回。原中断状态的保存与恢复使页分配接口能够在内核临界区中使用，也保证内外层保护正确衔接。后续通过专门的异常指令和寄存器快照进一步检查返回状态。
 
 -----
 

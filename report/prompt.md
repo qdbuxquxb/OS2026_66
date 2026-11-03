@@ -2,7 +2,7 @@
 
 小组成员：国轩 2414132、孟子玉 2411963、韩东儒 2411185。
 
-本文件汇总实验二代码衔接和 Trap 入口与上下文恢复，对应 P1、P2。源码路径相对于 `lab3` 分支根目录。
+本文件汇总实验二代码衔接、Trap 入口与恢复、中断与异常处理，对应 P1～P3。源码路径相对于 `lab3` 分支根目录。
 
 ## P1 前序物理内存管理衔接
 
@@ -49,4 +49,28 @@ RESTORE_ALL：Pre 为 sp 指向有效 Trap frame；Post 为可写整数寄存器
 __alltraps：Pre 为当前内核栈有效；Post 为 trap 收到正确的 frame 地址，C 函数返回后仍能读取同一 frame 并恢复。
 Case：处理函数改写 tf->epc 时，返回到新地址；未改写时保持原执行位置。S 模式 Trap 返回仍为 S 模式，不强制清除 SPP。
 Requirements：正确处理 x2 的特殊保存方式、栈对齐和调用造成的寄存器变化；不要求用户栈切换。旧 CSR 名称不兼容时，仅加必要汇编别名，不改 SAVE_ALL。
+```
+
+## P3 中断与异常处理
+
+负责人：孟子玉 2411963。
+
+```text
+[PROMPT]
+任务：在 code/kern/trap/trap.c 的 lab3 位置实现中断与异常处理。
+操作：修改实际文件，注释署 2411963；保留已有函数和签名，只加必要 include/常量，不改官方测试。
+输出：用 QEMU 4.1.1 检查运行行为并记录结果；SHUTDOWN_AFTER 未定义时取 10，并说明这一选择。
+
+[RELY]
+读取 trap.h、driver/clock.{c,h}、libs/{riscv.h,sbi.h}。依赖 trapframe、ticks、TICK_NUM、原因宏、clock_set_next_event、print_ticks、print_trapframe、sbi_shutdown。
+
+[GUARANTEE]
+实现 void interrupt_handler(struct trapframe *tf) 和 void exception_handler(struct trapframe *tf)。
+
+[SPECIFICATION]
+interrupt_handler：Pre 为有效 frame；Post 为按去掉中断标志的原因号分发。每次 IRQ_S_TIMER 都安排后续事件且 ticks 恰增一次，每 TICK_NUM 次打印一次统计，累计 SHUTDOWN_AFTER 次统计后关机；不推进 epc。
+Case：U/S/M 的软件、定时器、外部中断输出相应类型提示，S 定时器执行上述逻辑。未知类型打印 Unknown interrupt: cause %lu 并输出 frame；S 软件提示为 Supervisor software interrupt。
+exception_handler：Pre 为有效 frame，待跳过的指令位于可读内核映射；非法指令输出 Illegal instruction at 0x%016lx\n，断点输出 Breakpoint at 0x%016lx\n；随后按目标支持的 16/32 位编码推进 epc，返回后不重复执行该指令。
+Case：其他异常只输出 frame，不推进 epc，不声称恢复成功。
+Requirements：不实现用户态、缺页恢复或设备驱动，不假定所有异常指令都长 4 字节。
 ```

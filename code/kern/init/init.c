@@ -32,7 +32,8 @@ int kern_init(void) {
 
     idt_init();  // init interrupt descriptor table
 
-    /* Timer delivery is enabled after the concrete Trap handlers are added. */
+    clock_init();   // init clock interrupt
+    intr_enable();  // enable irq interrupt
 
     /* do nothing */
     while (1)

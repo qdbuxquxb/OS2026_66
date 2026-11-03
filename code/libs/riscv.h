@@ -18,6 +18,12 @@
 #endif
 #define REGBYTES (1 << LOG_REGBYTES)
 
+/* The skeleton uses the old name for stval (CSR 0x143). Keep SAVE_ALL
+ * unchanged while allowing current assemblers to accept that name. */
+#ifdef __ASSEMBLER__
+#define sbadaddr 0x143
+#endif
+
 #define MSTATUS_UIE         0x00000001
 #define MSTATUS_SIE         0x00000002
 #define MSTATUS_HIE         0x00000004

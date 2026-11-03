@@ -1,4 +1,4 @@
-PROJ	:= lab2
+PROJ	:= lab3
 EMPTY	:=
 SPACE	:= $(EMPTY) $(EMPTY)
 SLASH	:= /
@@ -34,13 +34,6 @@ CFLAGS  := -mcmodel=medany -std=gnu99 -Wno-unused -Werror
 CFLAGS	+= -fno-builtin -Wall -O2 -nostdinc $(DEFS)
 CFLAGS	+= -fno-stack-protector -ffunction-sections -fdata-sections
 CFLAGS	+= -g
-# Default required by the official grader; PMM=buddy runs the Buddy variant.
-PMM ?= best-fit
-ifeq ($(PMM),buddy)
-CFLAGS += -DUSE_BUDDY_PMM
-else ifneq ($(PMM),best-fit)
-$(error PMM must be best-fit or buddy)
-endif
 CFLAGS2 = $(CFLAGS) -D ucore_test
 CTYPE	:= c S
 LD      := $(GCCPREFIX)ld
@@ -105,6 +98,7 @@ $(call add_files_cc,$(call listf_cc,$(LIBDIR)),libs,)
 
 KINCLUDE	+= kern/debug/ \
 			   kern/driver/ \
+			   kern/trap/ \
 			   kern/mm/ \
 			   kern/arch/
 
@@ -112,6 +106,7 @@ KSRCDIR		+= kern/init \
 			   kern/libs \
 			   kern/debug \
 			   kern/driver \
+			   kern/trap \
 			   kern/mm
 
 KCFLAGS		+= $(addprefix -I,$(KINCLUDE))
@@ -149,15 +144,6 @@ $(call create_target,ucore.img)
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 $(call finish_all)
-
-# Rebuild the selector when PMM changes, including changes back to the default.
-PMM_CONFIG := $(OBJDIR)/.pmm-$(PMM)
-$(PMM_CONFIG):
-	@mkdir -p $(OBJDIR)
-	@rm -f $(OBJDIR)/.pmm-*
-	@touch $@
-
-$(OBJDIR)/kern/mm/pmm.o: $(PMM_CONFIG)
 
 IGNORE_ALLDEPS	= clean \
 				  dist-clean \
@@ -212,11 +198,11 @@ GRADE_GDB_IN	:= .gdb.in
 GRADE_QEMU_OUT	:= .qemu.out
 HANDIN			:= proj$(PROJ)-handin.tar.gz
 
-TOUCH_FILES		:=
+TOUCH_FILES		:= kern/trap/trap.c
 
 MAKEOPTS		:= --quiet --no-print-directory
 
-GRADE_TMP	:= /tmp/lab2_grade
+GRADE_TMP	:= /tmp/lab3_grade
 
 grade:
 	$(V)$(MAKE) $(MAKEOPTS) clean

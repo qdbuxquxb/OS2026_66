@@ -1,36 +1,21 @@
+#include <clock.h>
 #include <console.h>
 #include <defs.h>
+#include <intr.h>
+#include <kdebug.h>
+#include <kmonitor.h>
 #include <pmm.h>
 #include <stdio.h>
 #include <string.h>
+#include <trap.h>
 #include <dtb.h>
 
 int kern_init(void) __attribute__((noreturn));
 void grade_backtrace(void);
-void print_kerninfo(void);
-
-// lab2 MMU debug probe 2411963
-uint64_t mmu_debug_word = 0x24141322411185UL;
-extern uint64_t mmu_debug_load(const volatile uint64_t *address);
-
-/* *
- * print_kerninfo - print the information about kernel, including the location
- * of kernel entry, the start addresses of data and text segements, the start
- * address of free memory and how many memory that kernel has used.
- * */
-void print_kerninfo(void) {
-    extern char etext[], edata[], end[];
-    cprintf("Special kernel symbols:\n");
-    cprintf("  entry  0x%016lx (virtual)\n", (uintptr_t)kern_init);
-    cprintf("  etext  0x%016lx (virtual)\n", etext);
-    cprintf("  edata  0x%016lx (virtual)\n", edata);
-    cprintf("  end    0x%016lx (virtual)\n", end);
-    cprintf("Kernel executable memory footprint: %dKB\n",
-            (end - (char*)kern_init + 1023) / 1024);
-}
 
 int kern_init(void) {
     extern char edata[], end[];
+    // 先清零 BSS，再读取并保存 DTB 的内存信息，避免被清零覆盖（为了解释变化 正式上传时我觉得应该删去这句话）
     memset(edata, 0, end - edata);
     dtb_init();
     cons_init();  // init the console
@@ -41,13 +26,31 @@ int kern_init(void) {
     print_kerninfo();
 
     // grade_backtrace();
+    idt_init();  // init interrupt descriptor table
+
     pmm_init();  // init physical memory management
 
-    assert(mmu_debug_load(&mmu_debug_word) == mmu_debug_word);
-    cprintf("mmu_probe() succeeded!\n");
+    idt_init();  // init interrupt descriptor table
+
+    /* Timer delivery is enabled after the concrete Trap handlers are added. */
 
     /* do nothing */
     while (1)
         ;
 }
+
+void __attribute__((noinline))
+grade_backtrace2(int arg0, int arg1, int arg2, int arg3) {
+    mon_backtrace(0, NULL, NULL);
+}
+
+void __attribute__((noinline)) grade_backtrace1(int arg0, int arg1) {
+    grade_backtrace2(arg0, (uintptr_t)&arg0, arg1, (uintptr_t)&arg1);
+}
+
+void __attribute__((noinline)) grade_backtrace0(int arg0, int arg1, int arg2) {
+    grade_backtrace1(arg0, arg2);
+}
+
+void grade_backtrace(void) { grade_backtrace0(0, (uintptr_t)kern_init, 0xffff0000); }
 

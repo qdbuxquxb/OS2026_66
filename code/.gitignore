@@ -1,5 +1,6 @@
-/bin/
-/obj/
+bin/
+obj/
 __pycache__/
 *.pyc
-*:Zone.Identifier
+.qemu*.out
+.gdb.in

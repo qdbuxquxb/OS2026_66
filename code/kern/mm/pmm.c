@@ -1,7 +1,5 @@
 #include <default_pmm.h>
 #include <best_fit_pmm.h>
-#include <buddy_pmm.h>
-#include <slub.h>
 #include <defs.h>
 #include <error.h>
 #include <memlayout.h>
@@ -10,6 +8,7 @@
 #include <sbi.h>
 #include <stdio.h>
 #include <string.h>
+#include <../sync/sync.h>
 #include <riscv.h>
 #include <dtb.h>
 
@@ -36,11 +35,7 @@ static void check_alloc_page(void);
 
 // init_pmm_manager - initialize a pmm_manager instance
 static void init_pmm_manager(void) {
-#ifdef USE_BUDDY_PMM
-    pmm_manager = &buddy_pmm_manager;
-#else
     pmm_manager = &best_fit_pmm_manager;
-#endif
     cprintf("memory management: %s\n", pmm_manager->name);
     pmm_manager->init();
 }
@@ -53,18 +48,37 @@ static void init_memmap(struct Page *base, size_t n) {
 // alloc_pages - call pmm->alloc_pages to allocate a continuous n*PAGESIZE
 // memory
 struct Page *alloc_pages(size_t n) {
-    return pmm_manager->alloc_pages(n);
+    struct Page *page = NULL;
+    bool intr_flag;
+    local_intr_save(intr_flag);
+    {
+        page = pmm_manager->alloc_pages(n);
+    }
+    local_intr_restore(intr_flag);
+    return page;
 }
 
 // free_pages - call pmm->free_pages to free a continuous n*PAGESIZE memory
 void free_pages(struct Page *base, size_t n) {
-    pmm_manager->free_pages(base, n);
+    bool intr_flag;
+    local_intr_save(intr_flag);
+    {
+        pmm_manager->free_pages(base, n);
+    }
+    local_intr_restore(intr_flag);
 }
 
 // nr_free_pages - call pmm->nr_free_pages to get the size (nr*PAGESIZE)
 // of current free memory
 size_t nr_free_pages(void) {
-    return pmm_manager->nr_free_pages();
+    size_t ret;
+    bool intr_flag;
+    local_intr_save(intr_flag);
+    {
+        ret = pmm_manager->nr_free_pages();
+    }
+    local_intr_restore(intr_flag);
+    return ret;
 }
 
 //lab2 function1 2414132
@@ -80,7 +94,8 @@ static void page_init(void) {
     uint64_t mem_end = mem_base + mem_size;
     cprintf("physical memory map:\n  memory: 0x%016lx, [0x%016lx, 0x%016lx].\n",
             mem_size, mem_base, mem_end - 1);
-    uintptr_t maxpa = mem_end < PHYSICAL_MEMORY_END ? mem_end : PHYSICAL_MEMORY_END;
+    uintptr_t limit = KERNTOP - PHYSICAL_MEMORY_OFFSET;
+    uintptr_t maxpa = mem_end < limit ? mem_end : limit;
     maxpa = ROUNDDOWN(maxpa, PGSIZE);
     npage = PPN(maxpa);
     if (npage <= nbase) {
@@ -119,11 +134,6 @@ void pmm_init(void) {
 
     // use pmm->check to verify the correctness of the alloc/free function in a pmm
     check_alloc_page();
-
-    // lab2 Buddy and SLUB checks 2414132
-    buddy_check();
-    slub_init();
-    slub_check();
 
     extern char boot_page_table_sv39[];
     satp_virtual = (pte_t*)boot_page_table_sv39;

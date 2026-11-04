@@ -1,0 +1,335 @@
+--- original/kern/mm/best_fit_pmm.c
++++ completed/kern/mm/best_fit_pmm.c
+@@ -4,7 +4,118 @@
+ #include <best_fit_pmm.h>
+ #include <stdio.h>
+ 
+-//lab2 请补充你在lab2中的代码
++//lab2 function2-2 2411963
++static free_area_t free_area;
++#define free_list (free_area.free_list)
++#define nr_free (free_area.nr_free)
++
++static void best_fit_check(void);
++
++static void best_fit_init(void) {
++    list_init(&free_list);
++    nr_free = 0;
++}
++
++/* Address order makes adjacent-block coalescing independent of fit policy. */
++static void insert_and_merge(struct Page *base, size_t n) {
++    list_entry_t *le = list_next(&free_list);
++    while (le != &free_list && le2page(le, page_link) < base) {
++        le = list_next(le);
++    }
++    base->property = n;
++    SetPageProperty(base);
++    list_add_before(le, &base->page_link);
++    list_entry_t *prev = list_prev(&base->page_link);
++    if (prev != &free_list) {
++        struct Page *p = le2page(prev, page_link);
++        assert(p + p->property <= base);
++        if (p + p->property == base) {
++            p->property += base->property;
++            ClearPageProperty(base);
++            base->property = 0;
++            list_del(&base->page_link);
++            base = p;
++        }
++    }
++    le = list_next(&base->page_link);
++    if (le != &free_list) {
++        struct Page *p = le2page(le, page_link);
++        assert(base + base->property <= p);
++        if (base + base->property == p) {
++            base->property += p->property;
++            ClearPageProperty(p);
++            p->property = 0;
++            list_del(&p->page_link);
++        }
++    }
++}
++
++static void best_fit_init_memmap(struct Page *base, size_t n) {
++    assert(n > 0);
++    for (struct Page *p = base; p < base + n; ++p) {
++        assert(PageReserved(p));
++        p->flags = p->property = 0;
++        set_page_ref(p, 0);
++    }
++    nr_free += n;
++    insert_and_merge(base, n);
++}
++
++static struct Page *best_fit_alloc_pages(size_t n) {
++    assert(n > 0);
++    if (n > nr_free) {
++        return NULL;
++    }
++    struct Page *best = NULL;
++    for (list_entry_t *le = list_next(&free_list); le != &free_list;
++         le = list_next(le)) {
++        struct Page *p = le2page(le, page_link);
++        if (p->property >= n && (best == NULL || p->property < best->property)) {
++            best = p;
++            if (p->property == n) {
++                break;
++            }
++        }
++    }
++    if (best != NULL) {
++        size_t remain = best->property - n;
++        list_entry_t *prev = list_prev(&best->page_link);
++        list_del(&best->page_link);
++        ClearPageProperty(best);
++        best->property = 0;
++        if (remain != 0) {
++            struct Page *rest = best + n;
++            rest->property = remain;
++            SetPageProperty(rest);
++            list_add(prev, &rest->page_link);
++        }
++        nr_free -= n;
++    }
++    return best;
++}
++
++static void best_fit_free_pages(struct Page *base, size_t n) {
++    assert(n > 0);
++    for (struct Page *p = base; p < base + n; ++p) {
++        assert(!PageReserved(p) && !PageProperty(p));
++        p->flags = p->property = 0;
++        set_page_ref(p, 0);
++    }
++    nr_free += n;
++    insert_and_merge(base, n);
++}
++
++static size_t best_fit_nr_free_pages(void) { return nr_free; }
++
++const struct pmm_manager best_fit_pmm_manager = {
++    .name = "best_fit_pmm_manager",
++    .init = best_fit_init,
++    .init_memmap = best_fit_init_memmap,
++    .alloc_pages = best_fit_alloc_pages,
++    .free_pages = best_fit_free_pages,
++    .nr_free_pages = best_fit_nr_free_pages,
++    .check = best_fit_check,
++};
+ 
+ static void
+ basic_check(void) {
+--- original/kern/mm/pmm.c
++++ completed/kern/mm/pmm.c
+@@ -35,7 +35,7 @@
+ 
+ // init_pmm_manager - initialize a pmm_manager instance
+ static void init_pmm_manager(void) {
+-    pmm_manager = &default_pmm_manager;
++    pmm_manager = &best_fit_pmm_manager;
+     cprintf("memory management: %s\n", pmm_manager->name);
+     pmm_manager->init();
+ }
+@@ -81,7 +81,43 @@
+     return ret;
+ }
+ 
+-//lab2 请补充你在lab2中的代码
++//lab2 function1 2414132
++static void page_init(void) {
++    extern char end[];
++    uint64_t mem_base = get_memory_base(), mem_size = get_memory_size();
++    va_pa_offset = PHYSICAL_MEMORY_OFFSET;
++    /* The boot page table and page2ppn() both assume DRAM_BASE. */
++    if (mem_base != DRAM_BASE || mem_size == 0 ||
++        mem_size > (uint64_t)-1 - mem_base) {
++        panic("invalid physical memory range from DTB");
++    }
++    uint64_t mem_end = mem_base + mem_size;
++    cprintf("physical memory map:\n  memory: 0x%016lx, [0x%016lx, 0x%016lx].\n",
++            mem_size, mem_base, mem_end - 1);
++    uintptr_t limit = KERNTOP - PHYSICAL_MEMORY_OFFSET;
++    uintptr_t maxpa = mem_end < limit ? mem_end : limit;
++    maxpa = ROUNDDOWN(maxpa, PGSIZE);
++    npage = PPN(maxpa);
++    if (npage <= nbase) {
++        panic("no manageable physical memory");
++    }
++    uintptr_t desc_pa = ROUNDUP(PADDR(end), PGSIZE);
++    size_t desc_bytes = (npage - nbase) * sizeof(struct Page);
++    if (desc_pa > maxpa || desc_bytes > maxpa - desc_pa) {
++        panic("not enough memory for page descriptors");
++    }
++    pages = (struct Page *)(desc_pa + va_pa_offset);
++    for (size_t i = 0; i < npage - nbase; ++i) {
++        pages[i].flags = pages[i].property = 0;
++        set_page_ref(&pages[i], 0);
++        SetPageReserved(&pages[i]);
++        list_init(&pages[i].page_link);
++    }
++    uintptr_t freemem = ROUNDUP(desc_pa + desc_bytes, PGSIZE);
++    if (freemem < maxpa) {
++        init_memmap(pa2page(freemem), (maxpa - freemem) / PGSIZE);
++    }
++}
+ 
+ /* pmm_init - initialize the physical memory management */
+ void pmm_init(void) {
+--- original/kern/trap/trap.c
++++ completed/kern/trap/trap.c
+@@ -7,6 +7,7 @@
+ #include <mmu.h>
+ #include <riscv.h>
+ #include <stdio.h>
++#include <sbi.h>
+ #include <trap.h>
+ 
+ #define TICK_NUM 100
+@@ -80,7 +81,71 @@
+     cprintf("  t6       0x%08x\n", gpr->t6);
+ }
+ 
+-//lab3 function2 YOUR CODE
++//lab3 function2 2411963
++/* Ten reports of TICK_NUM timer interrupts, then a normal SBI shutdown. */
++#define SHUTDOWN_AFTER 10
++
++void interrupt_handler(struct trapframe *tf) {
++    uintptr_t cause = tf->cause & ~((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1));
++    switch (cause) {
++    case IRQ_U_SOFT:
++        cprintf("User software interrupt\n");
++        break;
++    case IRQ_S_SOFT:
++        cprintf("Supervisor software interrupt\n");
++        break;
++    case IRQ_M_SOFT:
++        cprintf("Machine software interrupt\n");
++        break;
++    case IRQ_U_TIMER:
++        cprintf("User timer interrupt\n");
++        break;
++    case IRQ_S_TIMER:
++        clock_set_next_event();
++        ++ticks;
++        if (ticks % TICK_NUM == 0) {
++            print_ticks();
++            if (ticks / TICK_NUM >= SHUTDOWN_AFTER) {
++                sbi_shutdown();
++            }
++        }
++        break;
++    case IRQ_M_TIMER:
++        cprintf("Machine timer interrupt\n");
++        break;
++    case IRQ_U_EXT:
++        cprintf("User external interrupt\n");
++        break;
++    case IRQ_S_EXT:
++        cprintf("Supervisor external interrupt\n");
++        break;
++    case IRQ_M_EXT:
++        cprintf("Machine external interrupt\n");
++        break;
++    default:
++        cprintf("Unknown interrupt: cause %lu\n", cause);
++        print_trapframe(tf);
++        break;
++    }
++}
++
++void exception_handler(struct trapframe *tf) {
++    switch (tf->cause) {
++    case CAUSE_ILLEGAL_INSTRUCTION:
++        cprintf("Illegal instruction at 0x%016lx\n", tf->epc);
++        break;
++    case CAUSE_BREAKPOINT:
++        cprintf("Breakpoint at 0x%016lx\n", tf->epc);
++        break;
++    default:
++        print_trapframe(tf);
++        return;
++    }
++    /* RV64GC has 16-bit compressed and 32-bit base instructions. Fetch only
++     * the first halfword, which is sufficient to distinguish their lengths. */
++    uint16_t instruction = *(volatile const uint16_t *)tf->epc;
++    tf->epc += (instruction & 3) == 3 ? 4 : 2;
++}
+ 
+ 
+ static inline void trap_dispatch(struct trapframe *tf) {
+--- original/kern/trap/trapentry.S
++++ completed/kern/trap/trapentry.S
+@@ -56,7 +56,44 @@
+ 
+     .macro RESTORE_ALL
+ 
+-    #lab3 function1 YOUR CODE
++    #lab3 function1 2414132
++    # Restore writable return CSRs before reloading their temporary registers.
++    LOAD s1, 32*REGBYTES(sp)
++    LOAD s2, 33*REGBYTES(sp)
++    csrw sstatus, s1
++    csrw sepc, s2
++    LOAD x1, 1*REGBYTES(sp)
++    LOAD x3, 3*REGBYTES(sp)
++    LOAD x4, 4*REGBYTES(sp)
++    LOAD x5, 5*REGBYTES(sp)
++    LOAD x6, 6*REGBYTES(sp)
++    LOAD x7, 7*REGBYTES(sp)
++    LOAD x8, 8*REGBYTES(sp)
++    LOAD x9, 9*REGBYTES(sp)
++    LOAD x10, 10*REGBYTES(sp)
++    LOAD x11, 11*REGBYTES(sp)
++    LOAD x12, 12*REGBYTES(sp)
++    LOAD x13, 13*REGBYTES(sp)
++    LOAD x14, 14*REGBYTES(sp)
++    LOAD x15, 15*REGBYTES(sp)
++    LOAD x16, 16*REGBYTES(sp)
++    LOAD x17, 17*REGBYTES(sp)
++    LOAD x18, 18*REGBYTES(sp)
++    LOAD x19, 19*REGBYTES(sp)
++    LOAD x20, 20*REGBYTES(sp)
++    LOAD x21, 21*REGBYTES(sp)
++    LOAD x22, 22*REGBYTES(sp)
++    LOAD x23, 23*REGBYTES(sp)
++    LOAD x24, 24*REGBYTES(sp)
++    LOAD x25, 25*REGBYTES(sp)
++    LOAD x26, 26*REGBYTES(sp)
++    LOAD x27, 27*REGBYTES(sp)
++    LOAD x28, 28*REGBYTES(sp)
++    LOAD x29, 29*REGBYTES(sp)
++    LOAD x30, 30*REGBYTES(sp)
++    LOAD x31, 31*REGBYTES(sp)
++    # x2 contains the original SP saved via sscratch; restore it last.
++    LOAD x2, 2*REGBYTES(sp)
+ 
+     .endm
+ 
+@@ -65,7 +102,9 @@
+ __alltraps:
+     SAVE_ALL
+ 
+-    #lab3 function1 YOUR CODE
++    #lab3 function1 2414132
++    mv a0, sp
++    jal trap
+     # sp should be the same as before "jal trap"
+ 
+     .globl __trapret
+--- original/libs/riscv.h
++++ completed/libs/riscv.h
+@@ -17,6 +17,12 @@
+ # define LOG_REGBYTES 2
+ #endif
+ #define REGBYTES (1 << LOG_REGBYTES)
++
++/* The skeleton uses the old name for stval (CSR 0x143). Keep SAVE_ALL
++ * unchanged while allowing current assemblers to accept that name. */
++#ifdef __ASSEMBLER__
++#define sbadaddr 0x143
++#endif
+ 
+ #define MSTATUS_UIE         0x00000001
+ #define MSTATUS_SIE         0x00000002

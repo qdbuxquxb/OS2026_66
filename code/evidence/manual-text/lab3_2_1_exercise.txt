@@ -1,0 +1,182 @@
+练习
+本实验按“Trap 上下文保存与恢复 -> Trap 入口与返回 -> 中断与异常处理”三条主线展开，核心目标是让内核从“能够产生 Trap”进一步具备“能够保存 Trap 上下文、进入 C 语言处理函数、完成中断与异常处理，并最终恢复上下文返回原执行流”的完整 Trap 处理能力。
+本实验依赖实验2。请使用你此前设计的提示词生成相应实验代码，并将生成结果填写到本实验代码中标有“lab2”注释的对应位置，确保代码能够正确编译。
+功能模块一：Trap 上下文恢复与 Trap 入口功能（设计提示词借助 ai 完成）
+要求实现的函数或汇编功能有(kern\trap\trapentry.S)：
+RESTORE_ALL
+__alltraps
+整个功能模块的具体功能为：这个模块负责完成 Trap 从“进入内核”到“返回原执行流”之间的底层上下文管理。
+SAVE_ALL
+已经负责把 Trap 发生时的处理器状态保存到当前内核栈上的 Trap frame 中，学生需要根据这一已有的保存关系，设计提示词让 AI 完成对应的
+RESTORE_ALL
+，使被打断程序的执行状态能够从 Trap frame 中恢复出来。同时，
+__alltraps
+需要负责建立汇编 Trap 入口与 C 语言
+trap(struct trapframe *tf)
+之间的调用关系，使保存后的 Trap frame 能够按照 RISC-V 调用约定正确传递给
+trap()
+；这个模块完成后，系统应能够形成完整的“Trap 进入 -> 上下文保存 -> C 语言处理 -> 上下文恢复 -> Trap 返回”闭环。
+整个功能模块的注意事项为：这里最关键的是保持“Trap frame 布局、上下文保存与恢复、函数调用约定、Trap 返回状态”之间的一致性。
+RESTORE_ALL
+必须与已经提供的
+SAVE_ALL
+保持对应关系，不能自行假设一个与实际 Trap frame 不一致的数据布局。特别需要注意，
+SAVE_ALL
+中对
+x2(sp)
+的处理方式与其他通用寄存器并不完全相同，因此设计
+RESTORE_ALL
+时不能简单地把所有寄存器按照完全相同的方式恢复。
+__alltraps
+则需要保证当前 Trap frame 的地址能够按照 RISC-V 调用约定作为
+trap()
+的参数传递，同时不能破坏后续恢复上下文所需要的信息。本功能模块不要求学生直接按照某一种固定的汇编指令序列实现，而是要求学生根据已有代码、接口和体系结构约束设计 Prompt，让 AI 完成功能实现。
+整个功能模块应该满足的对外的接口为：Trap 发生以后，系统应能够通过
+__alltraps
+建立完整的 Trap frame，并将其作为
+struct trapframe *
+传递给：
+void
+trap
+(
+struct
+trapframe
+*
+tf
+)
+;
+trap()
+返回以后，应能够进入
+__trapret
+，完成上下文恢复并通过
+sret
+返回。对于
+RESTORE_ALL
+而言，对外表现为“输入当前 Trap frame，输出恢复后的处理器执行状态”；对于
+__alltraps
+而言，对外表现为“将 Trap 上下文正确传递给 C 语言 Trap 处理函数”；整个模块不得修改
+SAVE_ALL
+、
+struct trapframe
+和
+trap()
+的函数签名。
+整个功能模块可以借助的接口函数、结构体、数据结构为：这个模块主要依赖
+struct trapframe
+、
+trap()
+、已经提供的
+SAVE_ALL
+、
+__alltraps
+、
+__trapret
+、
+RESTORE_ALL
+以及 RISC-V 函数调用约定和特权级 Trap 返回机制。其中，
+struct trapframe
+决定保存后的上下文数据组织形式，
+SAVE_ALL
+是已经提供的上下文保存参考，
+trap(struct trapframe *tf)
+是 C 语言层面的 Trap 处理接口，而
+sret
+是最终完成 Trap 返回的处理器特权指令。学生需要结合这些已有接口和约束设计 Prompt，而不是直接依据指导书中的伪代码填写汇编指令。
+功能模块二：中断与异常处理功能（设计提示词借助 ai 完成）
+要求实现的函数有：
+void
+interrupt_handler
+(
+struct
+trapframe
+*
+tf
+)
+;
+(
+kern\trap\trap
+.
+c
+)
+void
+exception_handler
+(
+struct
+trapframe
+*
+tf
+)
+;
+(
+kern\trap\trap
+.
+c
+)
+整个功能模块的具体功能为：这个模块负责对 Trap 入口传递过来的中断和异常进行具体分类和处理。
+interrupt_handler()
+负责处理中断，其中时钟中断需要完成下一次时钟事件设置、时钟计数、统计信息输出以及达到规定次数后的系统关机；其他类型的中断只需要完成基本的类型区分和相应提示输出，无法识别的中断则通过已有的
+print_trapframe(tf)
+输出完整 Trap frame 以辅助调试。
+exception_handler()
+负责处理实验要求的异常，其中非法指令异常和断点异常需要输出规定格式的信息，并根据对应指令的长度正确更新
+tf->epc
+，使 Trap 返回以后不会重复执行已经触发异常的指令；其他未要求具体处理的异常则使用已有的
+print_trapframe(tf)
+作为兜底处理。这个模块完成后，系统应能够对实验要求的时钟中断、非法指令异常和断点异常进行正确识别和处理。
+整个功能模块的注意事项为：这里最关键的是保持“Trap 类型识别、处理行为、执行位置更新、后续 Trap 返回”之间的一致性。对于时钟中断，不能只进行计数而不设置下一次时钟事件，否则系统只能收到一次时钟中断；
+ticks
+每收到一次时钟中断必须增加一次，并且当其达到
+TICK_NUM
+的整数倍时输出规定格式的统计信息；累计输出达到
+SHUTDOWN_AFTER
+后需要调用框架提供的关机接口。对于异常处理，非法指令和断点异常必须严格按照实验规定的输出格式进行处理，同时需要正确更新
+tf->epc
+，否则处理器返回以后可能再次执行同一条异常指令并形成异常循环。不同异常对应的指令长度可能不同，因此不能假定所有异常都使用相同的
+epc
+偏移量，需要结合 RISC-V 指令编码规则判断。对于未列出的异常类型，本实验不要求实现具体的异常恢复逻辑，只需调用框架提供的
+print_trapframe(tf)
+进行兜底输出。整个模块不得修改函数签名，也不得修改
+trap.c
+中规定以外的其他函数。
+整个功能模块应该满足的对外的接口为：
+interrupt_handler()
+接收当前 Trap frame，根据 Trap 原因处理中断，并返回到统一的 Trap 返回流程；其中
+IRQ_S_TIMER
+必须能够持续产生时钟中断，并在达到规定条件后输出统计信息和执行系统关机。
+exception_handler()
+接收当前 Trap frame，根据
+tf->cause
+区分非法指令异常、断点异常以及其他异常，并完成规定的输出和执行位置更新。正常处理完成后，两个处理函数都必须能够与后续的 Trap 返回机制正确衔接。
+整个功能模块可以借助的接口函数、结构体、数据结构为：这个模块主要依赖
+struct trapframe
+、
+trap_dispatch()
+、
+interrupt_handler()
+、
+exception_handler()
+、
+print_trapframe()
+、
+clock_set_next_event()
+、
+ticks
+、
+TICK_NUM
+、
+SHUTDOWN_AFTER
+、
+IRQ_S_TIMER
+、
+CAUSE_ILLEGAL_INSTRUCTION
+、
+CAUSE_BREAKPOINT
+以及
+libs/sbi.h
+中提供的关机相关接口。其中
+tf->cause
+用于判断当前 Trap 类型，
+tf->epc
+用于记录和调整 Trap 返回后的执行位置，
+ticks
+用于记录时钟中断次数。具体接口和宏均以实验框架中已有定义为准。

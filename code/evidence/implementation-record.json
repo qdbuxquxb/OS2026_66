@@ -1,0 +1,27 @@
+{
+  "qemu": "QEMU emulator version 4.1.1",
+  "source_archive": "../lab3.zip",
+  "manual": "http://oslab.mobisys.top/lab2026/_book/lab3/lab3.html",
+  "changed_original_files": [
+    "kern/mm/best_fit_pmm.c",
+    "kern/mm/pmm.c",
+    "kern/trap/trap.c",
+    "kern/trap/trapentry.S",
+    "libs/riscv.h"
+  ],
+  "decisions": {
+    "shutdown_after_reports": 10,
+    "timer_interrupts_per_report": 100,
+    "memory_upper_bound": "KERNTOP - PHYSICAL_MEMORY_OFFSET",
+    "sbadaddr_assembler_alias": "0x143 (stval)",
+    "migration": "page_init and Best-Fit only; Lab3 interrupt guards retained"
+  },
+  "resolved_build_errors": [
+    "Current assembler does not recognize sbadaddr; add an assembly-only alias without changing SAVE_ALL.",
+    "PHYSICAL_MEMORY_END is absent in Lab3; derive limit from existing layout macros."
+  ],
+  "official_grade": "100/100",
+  "report_written": true,
+  "report_path": "../report/report.md",
+  "report_status": "draft; screenshots integrated"
+}

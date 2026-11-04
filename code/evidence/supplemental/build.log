@@ -6,8 +6,8 @@
 + cc kern/debug/kdebug.c
 + cc kern/debug/kmonitor.c
 + cc kern/debug/panic.c
-+ cc kern/driver/console.c
 + cc kern/driver/clock.c
++ cc kern/driver/console.c
 + cc kern/driver/dtb.c
 + cc kern/driver/intr.c
 + cc kern/trap/trap.c
@@ -16,8 +16,8 @@
 + cc kern/mm/default_pmm.c
 + cc kern/mm/pmm.c
 + cc libs/printfmt.c
-+ cc libs/sbi.c
 + cc libs/readline.c
++ cc libs/sbi.c
 + cc libs/string.c
 + ld bin/kernel
 riscv64-unknown-elf-objcopy bin/kernel --strip-all -O binary bin/ucore.img

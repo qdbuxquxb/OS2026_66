@@ -1,0 +1,15 @@
+{
+  "qemu": "QEMU emulator version 4.1.1",
+  "cases": [
+    "break16",
+    "break32",
+    "illegal16",
+    "illegal32",
+    "timer"
+  ],
+  "all_32_gprs": "PASS",
+  "interrupt_guards": "PASS",
+  "reports_before_shutdown": 10,
+  "normal_shutdown_exit_code": 0,
+  "result": "PASS"
+}

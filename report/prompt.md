@@ -2,7 +2,7 @@
 
 小组成员：国轩 2414132、孟子玉 2411963、韩东儒 2411185。
 
-本文件汇总实验二代码衔接、Trap 入口与恢复、中断与异常处理，对应 P1～P3。源码路径相对于 `lab3` 分支根目录。
+本文件汇总前序衔接、Trap 入口与恢复、中断与异常处理和补充测试，对应 P1～P4。源码路径相对于 `lab3` 分支根目录。
 
 ## P1 前序物理内存管理衔接
 
@@ -73,4 +73,29 @@ Case：U/S/M 的软件、定时器、外部中断输出相应类型提示，S �
 exception_handler：Pre 为有效 frame，待跳过的指令位于可读内核映射；非法指令输出 Illegal instruction at 0x%016lx\n，断点输出 Breakpoint at 0x%016lx\n；随后按目标支持的 16/32 位编码推进 epc，返回后不重复执行该指令。
 Case：其他异常只输出 frame，不推进 epc，不声称恢复成功。
 Requirements：不实现用户态、缺页恢复或设备驱动，不假定所有异常指令都长 4 字节。
+```
+
+## P4 补充验证
+
+负责人：韩东儒 2411185。
+
+```text
+[PROMPT]
+任务：新增 code/tools/check_lab3.py，补查 Trap 返回、中断保护与正常关机。
+操作：只在临时源码副本注入探针，不改工作内核或官方工具；保留真实失败信息，不输出虚假 PASS。
+输出：提供 --qemu 和 --out 参数，限定 QEMU 4.1.1；在 code/evidence/supplemental 保存构建、运行日志与 JSON 结果。
+
+[RELY]
+读取 code/kern/trap/{trap.h,trapentry.S}、driver/clock.h、sync/sync.h、mm/pmm.h、init/init.c 和 Makefile。已有 alloc_page/free_page/nr_free_pages、中断状态接口与 ticks。
+
+[GUARANTEE]
+交付可执行的 Python 验证入口；生成必要的 C/汇编探针，退出时回收测试进程与临时目录。
+
+[SPECIFICATION]
+Pre：实现已完成，交叉工具链可用；Post：原工作源码不变，结果可由日志核对。
+Case 1：实际触发 16/32 位断点和非法指令，检查各自返回；实际等待时钟中断，确认 ticks 增加。
+Case 2：用汇编设置/快照整数寄存器，再逐项核对 x0～x31、原 sp/ra/gp/tp、SIE 与 sscratch；探针自身遵守调用约定，比较前不得覆盖待测值。
+Case 3：分别在开/关中断时分配、释放页面，检查原中断状态及页数恢复；嵌套保护退出内层后仍关闭，外层退出后恢复。
+Case 4：普通时钟路径统计恰有 10 行 100 ticks 并以状态 0 退出；超时、构建失败或断言失败均报告失败。
+Requirements：明确写入两种长度的指令编码；失败不得被退出清理掩盖，不以自打印成功信息代替实际断言。
 ```

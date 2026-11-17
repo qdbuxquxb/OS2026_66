@@ -8,7 +8,13 @@
  * cputch - writes a single character @c to stdout, and it will
  * increace the value of counter pointed by @cnt.
  * */
+<<<<<<< Updated upstream:code/lab1/kern/libs/stdio.c
 static void cputch(int c, int *cnt) {
+=======
+static void
+cputch(int c, int *cnt)
+{
+>>>>>>> Stashed changes:code/kern/libs/stdio.c
     cons_putc(c);
     (*cnt)++;
 }
@@ -22,7 +28,12 @@ static void cputch(int c, int *cnt) {
  * Call this function if you are already dealing with a va_list.
  * Or you probably want cprintf() instead.
  * */
+<<<<<<< Updated upstream:code/lab1/kern/libs/stdio.c
 int vcprintf(const char *fmt, va_list ap) {
+=======
+int vcprintf(const char *fmt, va_list ap)
+{
+>>>>>>> Stashed changes:code/kern/libs/stdio.c
     int cnt = 0;
     vprintfmt((void *)cputch, &cnt, fmt, ap);
     return cnt;
@@ -34,7 +45,12 @@ int vcprintf(const char *fmt, va_list ap) {
  * The return value is the number of characters which would be
  * written to stdout.
  * */
+<<<<<<< Updated upstream:code/lab1/kern/libs/stdio.c
 int cprintf(const char *fmt, ...) {
+=======
+int cprintf(const char *fmt, ...)
+{
+>>>>>>> Stashed changes:code/kern/libs/stdio.c
     va_list ap;
     int cnt;
     va_start(ap, fmt);
@@ -44,6 +60,7 @@ int cprintf(const char *fmt, ...) {
 }
 
 /* cputchar - writes a single character to stdout */
+<<<<<<< Updated upstream:code/lab1/kern/libs/stdio.c
 void cputchar(int c) { cons_putc(c); }
 
 /* *
@@ -62,6 +79,16 @@ int cputs(const char *str) {
 
 /* getchar - reads a single non-zero character from stdin */
 int getchar(void) {
+=======
+void cputchar(int c)
+{
+    cons_putc(c);
+}
+
+/* getchar - reads a single non-zero character from stdin */
+int getchar(void)
+{
+>>>>>>> Stashed changes:code/kern/libs/stdio.c
     int c;
     while ((c = cons_getc()) == 0) /* do nothing */;
     return c;

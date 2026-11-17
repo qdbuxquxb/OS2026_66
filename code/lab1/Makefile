@@ -1,13 +1,17 @@
+<<<<<<< Updated upstream:code/lab1/Makefile
 PROJ	:= lab1
+=======
+PROJ	:= lab4
+>>>>>>> Stashed changes:code/Makefile
 EMPTY	:=
 SPACE	:= $(EMPTY) $(EMPTY)
 SLASH	:= /
 
 V       := @
 
-#ifndef GCCPREFIX
+ifndef GCCPREFIX
 GCCPREFIX := riscv64-unknown-elf-
-#endif
+endif
 
 ifndef QEMU
 QEMU := qemu-system-riscv64
@@ -27,15 +31,20 @@ HOSTCFLAGS	:= -Wall -O2
 GDB		:= $(GCCPREFIX)gdb
 
 CC		:= $(GCCPREFIX)gcc
+<<<<<<< Updated upstream:code/lab1/Makefile
 CFLAGS  := -mcmodel=medany -std=gnu99 -Wno-unused -Werror
 CFLAGS	+= -fno-builtin -Wall -O2 -nostdinc $(DEFS)
+=======
+CFLAGS  := -mcmodel=medany -O2 -std=gnu99 -Wno-unused
+CFLAGS	+= -fno-builtin -Wall -nostdinc $(DEFS)
+>>>>>>> Stashed changes:code/Makefile
 CFLAGS	+= -fno-stack-protector -ffunction-sections -fdata-sections
 CFLAGS	+= -g
 CTYPE	:= c S
 
 LD      := $(GCCPREFIX)ld
 LDFLAGS	:= -m elf64lriscv
-LDFLAGS	+= -nostdlib --gc-sections
+LDFLAGS	+= -nostdlib --gc-sections --print-gc-sections
 
 OBJCOPY := $(GCCPREFIX)objcopy
 OBJDUMP := $(GCCPREFIX)objdump
@@ -97,14 +106,20 @@ KINCLUDE	+= kern/debug/ \
 			   kern/trap/ \
 			   kern/libs/\
 			   kern/mm/ \
-			   kern/arch/
+			   kern/sync/ \
+			   kern/fs/ \
+			   kern/process \
+			   kern/schedule
 
 KSRCDIR		+= kern/init \
 			   kern/debug \
 			   kern/libs \
 			   kern/driver \
 			   kern/trap \
-			   kern/mm
+			   kern/mm \
+			   kern/fs \
+			   kern/process \
+			   kern/schedule
 
 KCFLAGS		+= $(addprefix -I,$(KINCLUDE))
 
@@ -129,6 +144,8 @@ $(call create_target,kernel)
 # create ucore.img
 UCOREIMG	:= $(call totarget,ucore.img)
 
+# $(UCOREIMG): $(kernel)
+#	cd ../../riscv-pk && rm -rf build && mkdir build && cd build && ../configure --prefix=$(RISCV) --host=riscv64-unknown-elf --with-payload=../../labcodes/$(PROJ)/$(kernel)  --disable-fp-emulation && make && cp bbl ../../labcodes/$(PROJ)/$(UCOREIMG)
 
 $(UCOREIMG): $(kernel)
 	$(OBJCOPY) $(kernel) --strip-all -O binary $@
@@ -156,7 +173,11 @@ TARGETS: $(TARGETS)
 
 .DEFAULT_GOAL := TARGETS
 
+<<<<<<< Updated upstream:code/lab1/Makefile
 .PHONY: qemu 
+=======
+.PHONY: qemu spike
+>>>>>>> Stashed changes:code/Makefile
 qemu: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 #	$(V)$(QEMU) -kernel $(UCOREIMG) -nographic
 	$(V)$(QEMU) \
@@ -179,7 +200,13 @@ gdb:
     -ex 'set arch riscv:rv64' \
     -ex 'target remote localhost:1234'
 
+<<<<<<< Updated upstream:code/lab1/Makefile
 	
+=======
+spike: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
+	$(V)$(SPIKE) $(UCOREIMG)
+
+>>>>>>> Stashed changes:code/Makefile
 .PHONY: grade touch
 
 GRADE_GDB_IN	:= .gdb.in
@@ -190,6 +217,11 @@ TOUCH_FILES		:= kern/trap/trap.c
 
 MAKEOPTS		:= --quiet --no-print-directory
 
+<<<<<<< Updated upstream:code/lab1/Makefile
+=======
+GRADE_TMP		:= /tmp/lab4_grade
+
+>>>>>>> Stashed changes:code/Makefile
 grade:
 	$(V)$(MAKE) $(MAKEOPTS) clean
 	$(V)$(SH) tools/grade.sh

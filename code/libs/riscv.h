@@ -18,27 +18,6 @@
 #endif
 #define REGBYTES (1 << LOG_REGBYTES)
 
-<<<<<<< Updated upstream:code/lab1/libs/riscv.h
-#define MSTATUS_UIE         0x00000001
-#define MSTATUS_SIE         0x00000002
-#define MSTATUS_HIE         0x00000004
-#define MSTATUS_MIE         0x00000008
-#define MSTATUS_UPIE        0x00000010
-#define MSTATUS_SPIE        0x00000020
-#define MSTATUS_HPIE        0x00000040
-#define MSTATUS_MPIE        0x00000080
-#define MSTATUS_SPP         0x00000100
-#define MSTATUS_HPP         0x00000600
-#define MSTATUS_MPP         0x00001800
-#define MSTATUS_FS          0x00006000
-#define MSTATUS_XS          0x00018000
-#define MSTATUS_MPRV        0x00020000
-#define MSTATUS_PUM         0x00040000
-#define MSTATUS_MXR         0x00080000
-#define MSTATUS_VM          0x1F000000
-#define MSTATUS32_SD        0x80000000
-#define MSTATUS64_SD        0x8000000000000000
-=======
 #define MSTATUS_UIE 0x00000001
 #define MSTATUS_SIE 0x00000002
 #define MSTATUS_HIE 0x00000004
@@ -75,7 +54,6 @@
 #define SSTATUS32_SD 0x80000000
 #define SSTATUS_UXL 0x0000000300000000
 #define SSTATUS64_SD 0x8000000000000000
->>>>>>> Stashed changes:code/libs/riscv.h
 
 #define DCSR_XDEBUGVER (3U << 30)
 #define DCSR_NDRESET (1 << 29)
@@ -264,14 +242,9 @@
 #define barrier() __asm__ __volatile__("fence" ::: "memory")
 
 static inline void
-<<<<<<< Updated upstream:code/lab1/libs/riscv.h
-lcr3(unsigned int cr3) {
-    write_csr(sptbr, cr3 >> RISCV_PGSHIFT);
-=======
 lsatp(unsigned int pgdir)
 {
   write_csr(satp, SATP32_MODE | (pgdir >> RISCV_PGSHIFT));
->>>>>>> Stashed changes:code/libs/riscv.h
 }
 
 #endif
@@ -850,7 +823,7 @@ lsatp(unsigned int pgdir)
 #define CSR_SCAUSE 0x142
 #define CSR_STVAL 0x143
 #define CSR_SIP 0x144
-#define CSR_SPTBR 0x180
+#define CSR_SATP 0x180
 #define CSR_MSTATUS 0x300
 #define CSR_MISA 0x301
 #define CSR_MEDELEG 0x302
@@ -1342,7 +1315,7 @@ DECLARE_CSR(sepc, CSR_SEPC)
 DECLARE_CSR(scause, CSR_SCAUSE)
 DECLARE_CSR(stval, CSR_STVAL)
 DECLARE_CSR(sip, CSR_SIP)
-DECLARE_CSR(sptbr, CSR_SPTBR)
+DECLARE_CSR(satp, CSR_SATP)
 DECLARE_CSR(mstatus, CSR_MSTATUS)
 DECLARE_CSR(misa, CSR_MISA)
 DECLARE_CSR(medeleg, CSR_MEDELEG)

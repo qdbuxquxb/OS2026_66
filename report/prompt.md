@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 # Lab4 提示词汇总
 
 小组成员：国轩 2414132、孟子玉 2411963、韩东儒 2411185。
@@ -188,4 +186,3 @@ Case 4：临时副本触发 ebreak、16/32 位非法指令，等待 100 ticks �
 Requirements：记录 QEMU/GCC 版本、退出码和完整日志；失败时保留现场。
 ```
 
->>>>>>> Stashed changes

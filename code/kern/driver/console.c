@@ -1,9 +1,6 @@
 #include <sbi.h>
-<<<<<<< Updated upstream:code/lab1/kern/driver/console.c
-=======
 #include <sync.h>
 #include <defs.h>
->>>>>>> Stashed changes:code/kern/driver/console.c
 #include <console.h>
 
 /* kbd_intr - try to feed input characters from keyboard */

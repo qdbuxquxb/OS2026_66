@@ -29,21 +29,6 @@ typedef unsigned long long uint64_t;
   typedef int32_t sint_t;
 #endif
 
-#define INT8_MIN    (-0x7f - 1)
-#define INT16_MIN   (-0x7fff - 1)
-#define INT32_MIN   (-0x7fffffff - 1)
-#define INT64_MIN   (-0x7fffffffffffffff - 1)
-
-#define INT8_MAX    (0x7f)
-#define INT16_MAX   (0x7fff)
-#define INT32_MAX   (0x7fffffff)
-#define INT64_MAX   (0x7fffffffffffffff)
-
-#define UINT8_MAX   (0xff)
-#define UINT16_MAX  (0xffff)
-#define UINT32_MAX  (0xffffffff)
-#define UINT64_MAX  (0xffffffffffffffff)
-
 /* *
  * Pointers and addresses are 32 bits long.
  * We use pointer types to represent addresses,

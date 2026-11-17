@@ -10,7 +10,7 @@ int vcprintf(const char *fmt, va_list ap);
 void cputchar(int c);
 int getchar(void);
 
-/* libs/readline.c */
+/* kern/libs/readline.c */
 char *readline(const char *prompt);
 
 /* libs/printfmt.c */

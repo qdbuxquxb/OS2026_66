@@ -16,12 +16,6 @@
 
 #include <defs.h>
 
-<<<<<<< Updated upstream:code/lab1/libs/sbi.h
-void sbi_set_timer(unsigned long long stime_value);
-void sbi_send_ipi(unsigned long hart_id);
-unsigned long sbi_clear_ipi(void);
-void sbi_shutdown(void);
-=======
 #define SBI_SET_TIMER 0
 #define SBI_CONSOLE_PUTCHAR 1
 #define SBI_CONSOLE_GETCHAR 2
@@ -31,7 +25,6 @@ void sbi_shutdown(void);
 #define SBI_REMOTE_SFENCE_VMA 6
 #define SBI_REMOTE_SFENCE_VMA_ASID 7
 #define SBI_SHUTDOWN 8
->>>>>>> Stashed changes:code/libs/sbi.h
 
 #define SBI_CALL(which, arg0, arg1, arg2) ({			\
 	register uintptr_t a0 asm ("a0") = (uintptr_t)(arg0);	\
@@ -45,8 +38,6 @@ void sbi_shutdown(void);
 	a0;							\
 })
 
-<<<<<<< Updated upstream:code/lab1/libs/sbi.h
-=======
 /* Lazy implementations until SBI is finalized */
 #define SBI_CALL_0(which) SBI_CALL(which, 0, 0, 0)
 #define SBI_CALL_1(which, arg0) SBI_CALL(which, arg0, 0, 0)
@@ -68,7 +59,6 @@ static inline void sbi_set_timer(uint64_t stime_value)
 	SBI_CALL_2(SBI_SET_TIMER, stime_value, stime_value >> 32);
 #else
 	SBI_CALL_1(SBI_SET_TIMER, stime_value);
->>>>>>> Stashed changes:code/libs/sbi.h
 #endif
 }
 

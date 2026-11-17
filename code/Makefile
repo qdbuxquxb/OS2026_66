@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream:code/lab1/Makefile
-PROJ	:= lab1
-=======
 PROJ	:= lab4
->>>>>>> Stashed changes:code/Makefile
 EMPTY	:=
 SPACE	:= $(EMPTY) $(EMPTY)
 SLASH	:= /
@@ -17,6 +13,9 @@ ifndef QEMU
 QEMU := qemu-system-riscv64
 endif
 
+ifndef SPIKE
+SPIKE := spike
+endif
 
 # eliminate default suffix rules
 .SUFFIXES: .c .S .h
@@ -31,13 +30,8 @@ HOSTCFLAGS	:= -Wall -O2
 GDB		:= $(GCCPREFIX)gdb
 
 CC		:= $(GCCPREFIX)gcc
-<<<<<<< Updated upstream:code/lab1/Makefile
-CFLAGS  := -mcmodel=medany -std=gnu99 -Wno-unused -Werror
-CFLAGS	+= -fno-builtin -Wall -O2 -nostdinc $(DEFS)
-=======
 CFLAGS  := -mcmodel=medany -O2 -std=gnu99 -Wno-unused
 CFLAGS	+= -fno-builtin -Wall -nostdinc $(DEFS)
->>>>>>> Stashed changes:code/Makefile
 CFLAGS	+= -fno-stack-protector -ffunction-sections -fdata-sections
 CFLAGS	+= -g
 CTYPE	:= c S
@@ -90,7 +84,7 @@ match = $(shell echo $(2) | $(AWK) '{for(i=1;i<=NF;i++){if(match("$(1)","^"$$(i)
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # include kernel/user
 
-INCLUDE	+= libs 
+INCLUDE	+= libs/
 
 CFLAGS	+= $(addprefix -I,$(INCLUDE))
 
@@ -104,7 +98,6 @@ $(call add_files_cc,$(call listf_cc,$(LIBDIR)),libs,)
 KINCLUDE	+= kern/debug/ \
 			   kern/driver/ \
 			   kern/trap/ \
-			   kern/libs/\
 			   kern/mm/ \
 			   kern/sync/ \
 			   kern/fs/ \
@@ -112,8 +105,8 @@ KINCLUDE	+= kern/debug/ \
 			   kern/schedule
 
 KSRCDIR		+= kern/init \
-			   kern/debug \
 			   kern/libs \
+			   kern/debug \
 			   kern/driver \
 			   kern/trap \
 			   kern/mm \
@@ -173,25 +166,21 @@ TARGETS: $(TARGETS)
 
 .DEFAULT_GOAL := TARGETS
 
-<<<<<<< Updated upstream:code/lab1/Makefile
-.PHONY: qemu 
-=======
 .PHONY: qemu spike
->>>>>>> Stashed changes:code/Makefile
 qemu: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 #	$(V)$(QEMU) -kernel $(UCOREIMG) -nographic
 	$(V)$(QEMU) \
 		-machine virt \
 		-nographic \
 		-bios default \
-		-kernel $(UCOREIMG)
+		-device loader,file=$(UCOREIMG),addr=0x80200000
 
 debug: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 	$(V)$(QEMU) \
 		-machine virt \
 		-nographic \
 		-bios default \
-		-kernel $(UCOREIMG) \
+		-device loader,file=$(UCOREIMG),addr=0x80200000\
 		-s -S
 
 gdb:
@@ -200,13 +189,9 @@ gdb:
     -ex 'set arch riscv:rv64' \
     -ex 'target remote localhost:1234'
 
-<<<<<<< Updated upstream:code/lab1/Makefile
-	
-=======
 spike: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 	$(V)$(SPIKE) $(UCOREIMG)
 
->>>>>>> Stashed changes:code/Makefile
 .PHONY: grade touch
 
 GRADE_GDB_IN	:= .gdb.in
@@ -217,14 +202,16 @@ TOUCH_FILES		:= kern/trap/trap.c
 
 MAKEOPTS		:= --quiet --no-print-directory
 
-<<<<<<< Updated upstream:code/lab1/Makefile
-=======
 GRADE_TMP		:= /tmp/lab4_grade
 
->>>>>>> Stashed changes:code/Makefile
 grade:
 	$(V)$(MAKE) $(MAKEOPTS) clean
-	$(V)$(SH) tools/grade.sh
+	$(V)$(RM) -rf $(GRADE_TMP)
+	$(V)$(MKDIR) $(GRADE_TMP)
+	$(V)tar -C . --exclude=.git --exclude=.vscode --exclude=vcs -cf - . | tar -C $(GRADE_TMP) -xf -
+	$(V)python3 tools/inject.py $(GRADE_TMP)
+	$(V)cd $(GRADE_TMP) && $(SH) tools/grade.sh
+	$(V)$(RM) -rf $(GRADE_TMP)
 
 touch:
 	$(V)$(foreach f,$(TOUCH_FILES),$(TOUCH) $(f))
